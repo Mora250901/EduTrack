@@ -11,3 +11,24 @@ EduTrack es una plataforma web y móvil diseñada para ayudar a colegios de nive
 - **ML Service:** Python + Flask + scikit-learn
 
 ## Estructura del proyecto
+```
+EduTrack/
+├── backend/
+├── frontend-web/
+├── frontend-mobile/
+├── ml-service/
+└── docs/
+    ├── business-case/
+    ├── technical/
+    └── user-manuals/
+```
+
+## Estado actual del proyecto
+En desarrollo inicial. Estructura de carpetas creada.
+
+## Cómo empezar a desarrollar
+(Próximamente)
+
+## Autores
+- Omar Mora - Product Owner
+- Equipo de desarrollo del curso
