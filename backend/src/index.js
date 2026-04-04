@@ -41,6 +41,85 @@ app.get('/api/alumnos', async (req, res) => {
     res.json(data);
 });
 
+// Crear un nuevo alumno
+app.post('/api/alumnos', async (req, res) => {
+    const { nombre, apellido, grado, seccion } = req.body;
+    
+    const { data, error } = await supabase
+        .from('alumnos')
+        .insert([{ nombre, apellido, grado, seccion }])
+        .select();
+    
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data[0]);
+});
+
+// Registrar asistencia de un alumno
+app.post('/api/asistencias', async (req, res) => {
+    const { alumno_id, fecha, estado, observacion, registrado_por } = req.body;
+    
+    const { data, error } = await supabase
+        .from('asistencias')
+        .insert([{ alumno_id, fecha, estado, observacion, registrado_por }])
+        .select();
+    
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data[0]);
+});
+
+// Obtener asistencias de un alumno específico
+app.get('/api/asistencias/:alumno_id', async (req, res) => {
+    const { alumno_id } = req.params;
+    
+    const { data, error } = await supabase
+        .from('asistencias')
+        .select('*')
+        .eq('alumno_id', alumno_id)
+        .order('fecha', { ascending: false });
+    
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+// Crear una alerta para un alumno
+app.post('/api/alertas', async (req, res) => {
+    const { alumno_id, tipo, nivel, mensaje } = req.body;
+    
+    const { data, error } = await supabase
+        .from('alertas')
+        .insert([{ alumno_id, tipo, nivel, mensaje }])
+        .select();
+    
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data[0]);
+});
+
+// Obtener alertas no atendidas
+app.get('/api/alertas/pendientes', async (req, res) => {
+    const { data, error } = await supabase
+        .from('alertas')
+        .select('*, alumnos(nombre, apellido, grado, seccion)')
+        .eq('atendida', false)
+        .order('fecha_creacion', { ascending: false });
+    
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+// Marcar alerta como atendida
+app.put('/api/alertas/:id/atender', async (req, res) => {
+    const { id } = req.params;
+    
+    const { data, error } = await supabase
+        .from('alertas')
+        .update({ atendida: true })
+        .eq('id', id)
+        .select();
+    
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data[0]);
+});
+
 // Iniciar servidor
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
