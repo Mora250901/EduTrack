@@ -1,0 +1,32 @@
+{
+  "name": "edutrack",
+  "version": "1.0.0",
+  "description": "EduTrack es una plataforma web y móvil diseñada para ayudar a colegios de nivel inicial y primaria a detectar tempranamente señales de alerta en el aprendizaje y bienestar de sus estudiantes.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mora250901/EduTrack.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Mora250901/EduTrack/issues"
+  },
+  "homepage": "https://github.com/Mora250901/EduTrack#readme",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.0",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
