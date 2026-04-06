@@ -242,6 +242,84 @@ app.post('/api/registro', async (req, res) => {
     res.json(data[0]);
 });
 
+// ==================== RUTAS PARA PSICÓLOGO ====================
+
+// Obtener todos los casos
+app.get('/api/casos', async (req, res) => {
+    const { data, error } = await supabase
+        .from('casos')
+        .select('*, alumnos(nombre, apellido, grado, seccion)')
+        .order('fecha_creacion', { ascending: false });
+    
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+// Obtener casos de un alumno específico
+app.get('/api/casos/alumno/:alumno_id', async (req, res) => {
+    const { alumno_id } = req.params;
+    const { data, error } = await supabase
+        .from('casos')
+        .select('*, seguimientos(*)')
+        .eq('alumno_id', alumno_id)
+        .order('fecha_creacion', { ascending: false });
+    
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+// Crear un nuevo caso
+app.post('/api/casos', async (req, res) => {
+    const { alumno_id, titulo, descripcion, prioridad, creado_por } = req.body;
+    
+    const { data, error } = await supabase
+        .from('casos')
+        .insert([{ alumno_id, titulo, descripcion, prioridad, creado_por, estado: 'activo' }])
+        .select();
+    
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data[0]);
+});
+
+// Agregar seguimiento a un caso
+app.post('/api/seguimientos', async (req, res) => {
+    const { caso_id, tipo, descripcion, realizado_por } = req.body;
+    
+    const { data, error } = await supabase
+        .from('seguimientos')
+        .insert([{ caso_id, tipo, descripcion, realizado_por }])
+        .select();
+    
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data[0]);
+});
+
+// Cerrar un caso
+app.put('/api/casos/:id/cerrar', async (req, res) => {
+    const { id } = req.params;
+    const { data, error } = await supabase
+        .from('casos')
+        .update({ estado: 'cerrado', fecha_cierre: new Date() })
+        .eq('id', id)
+        .select();
+    
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data[0]);
+});
+
+// Obtener seguimientos de un caso
+app.get('/api/seguimientos/caso/:caso_id', async (req, res) => {
+    const { caso_id } = req.params;
+    const { data, error } = await supabase
+        .from('seguimientos')
+        .select('*')
+        .eq('caso_id', caso_id)
+        .order('fecha', { ascending: true });
+    
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
 // Iniciar servidor
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);

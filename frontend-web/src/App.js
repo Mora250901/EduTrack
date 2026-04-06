@@ -2,6 +2,12 @@ import React, { useEffect, useState } from 'react';
 import Login from './components/Login';
 
 function App() {
+
+  const [casos, setCasos] = useState([]);
+  const [mostrarFormularioCaso, setMostrarFormularioCaso] = useState(false);
+  const [alumnoSeleccionado, setAlumnoSeleccionado] = useState('');
+  const [nuevoCaso, setNuevoCaso] = useState({ titulo: '', descripcion: '', prioridad: 'media' });
+  const [creandoCaso, setCreandoCaso] = useState(false);
   // ==================== TODOS LOS HOOKS JUNTOS AL INICIO ====================
   
   // Hooks de autenticación
@@ -71,6 +77,9 @@ function App() {
       cargarAlumnos();
       cargarAlertas();
       cargarAsistenciasHoy();
+      if (usuario.rol === 'psicologo') {
+        cargarCasos();
+      }
     }
   }, [token, usuario]);
 
@@ -256,7 +265,7 @@ function App() {
       setMensaje('❌ Selecciona un alumno');
       return;
     }
-
+    
     setSaving(true);
     try {
       const response = await fetch('https://edutrack-backend-2ycx.onrender.com/api/asistencias', {
@@ -293,9 +302,68 @@ function App() {
     }
   };
 
-  if (!token || !usuario) {
-      return <Login onLogin={handleLogin} />;
+   // ==================== FUNCIONES PARA CASOS ====================
+
+  const cargarCasos = async () => {
+    try {
+      const response = await fetch('https://edutrack-backend-2ycx.onrender.com/api/casos');
+      const data = await response.json();
+      setCasos(data);
+    } catch (error) {
+      console.error('Error:', error);
     }
+  };
+
+  const crearCaso = async (e) => {
+    e.preventDefault();
+    setCreandoCaso(true);
+    try {
+      const response = await fetch('https://edutrack-backend-2ycx.onrender.com/api/casos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          alumno_id: alumnoSeleccionado,
+          titulo: nuevoCaso.titulo,
+          descripcion: nuevoCaso.descripcion,
+          prioridad: nuevoCaso.prioridad,
+          creado_por: usuario?.id
+        })
+      });
+      if (response.ok) {
+        setMostrarFormularioCaso(false);
+        setAlumnoSeleccionado('');
+        setNuevoCaso({ titulo: '', descripcion: '', prioridad: 'media' });
+        cargarCasos();
+        setMensaje('✅ Caso creado correctamente');
+        setTimeout(() => setMensaje(''), 3000);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setMensaje('❌ Error al crear el caso');
+    } finally {
+      setCreandoCaso(false);
+    }
+  };
+
+  const cerrarCaso = async (casoId) => {
+    try {
+      await fetch(`https://edutrack-backend-2ycx.onrender.com/api/casos/${casoId}/cerrar`, { 
+        method: 'PUT' 
+      });
+      cargarCasos();
+      setMensaje('✅ Caso cerrado');
+      setTimeout(() => setMensaje(''), 3000);
+    } catch (error) {
+      console.error('Error:', error);
+      setMensaje('❌ Error al cerrar el caso');
+    }
+  };
+
+  // ==================== CONDICIÓN DE AUTENTICACIÓN ====================
+
+  if (!token || !usuario) {
+    return <Login onLogin={handleLogin} />;
+  }
 
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial', maxWidth: '1200px', margin: '0 auto' }}>
@@ -457,6 +525,53 @@ function App() {
                 ))}
               </div>
 
+              {/* Sección de Casos Activos */}
+              <div style={{ backgroundColor: '#f3e5f5', padding: '15px', borderRadius: '8px', marginBottom: '30px' }}>
+                <h2>📋 Casos Activos</h2>
+                <button 
+                  onClick={() => setMostrarFormularioCaso(!mostrarFormularioCaso)}
+                  style={{ marginBottom: '15px', padding: '8px 16px', backgroundColor: '#9C27B0', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                >
+                  + Nuevo Caso
+                </button>
+
+                {mostrarFormularioCaso && (
+                  <form onSubmit={crearCaso} style={{ backgroundColor: 'white', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
+                    <select value={alumnoSeleccionado} onChange={(e) => setAlumnoSeleccionado(e.target.value)} required style={{ width: '100%', padding: '8px', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc' }}>
+                      <option value="">Selecciona un alumno</option>
+                      {alumnos.map(a => <option key={a.id} value={a.id}>{a.nombre} {a.apellido}</option>)}
+                    </select>
+                    <input type="text" placeholder="Título del caso" value={nuevoCaso.titulo} onChange={(e) => setNuevoCaso({...nuevoCaso, titulo: e.target.value})} required style={{ width: '100%', padding: '8px', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                    <textarea placeholder="Descripción" value={nuevoCaso.descripcion} onChange={(e) => setNuevoCaso({...nuevoCaso, descripcion: e.target.value})} style={{ width: '100%', padding: '8px', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc', minHeight: '80px' }} />
+                    <select value={nuevoCaso.prioridad} onChange={(e) => setNuevoCaso({...nuevoCaso, prioridad: e.target.value})} style={{ width: '100%', padding: '8px', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc' }}>
+                      <option value="baja">Prioridad Baja</option>
+                      <option value="media">Prioridad Media</option>
+                      <option value="alta">Prioridad Alta</option>
+                    </select>
+                    <button type="submit" disabled={creandoCaso} style={{ padding: '8px 16px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>{creandoCaso ? 'Creando...' : 'Crear Caso'}</button>
+                    <button type="button" onClick={() => setMostrarFormularioCaso(false)} style={{ marginLeft: '10px', padding: '8px 16px', backgroundColor: '#999', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Cancelar</button>
+                  </form>
+                )}
+
+                {casos.filter(c => c.estado === 'activo').length === 0 ? (
+                  <p>No hay casos activos</p>
+                ) : (
+                  casos.filter(c => c.estado === 'activo').map(caso => (
+                    <div key={caso.id} style={{ backgroundColor: 'white', padding: '12px', marginBottom: '10px', borderRadius: '6px', borderLeft: `4px solid ${caso.prioridad === 'alta' ? '#f44336' : caso.prioridad === 'media' ? '#ff9800' : '#4caf50'}` }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <strong>{caso.titulo}</strong>
+                          <span style={{ marginLeft: '10px', fontSize: '14px', color: '#666' }}>{caso.alumnos?.nombre} {caso.alumnos?.apellido}</span>
+                          <div style={{ fontSize: '14px', marginTop: '5px' }}>{caso.descripcion}</div>
+                          <div style={{ fontSize: '12px', color: '#999', marginTop: '5px' }}>Prioridad: {caso.prioridad}</div>
+                        </div>
+                        <button onClick={() => cerrarCaso(caso.id)} style={{ padding: '4px 8px', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Cerrar Caso</button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
               {/* Tabla de alumnos */}
               <h2>📋 Lista de Alumnos</h2>
               {loading ? <p>Cargando...</p> : (
@@ -465,14 +580,18 @@ function App() {
                     <tr><th>Nombre</th><th>Apellido</th><th>Grado</th><th>Sección</th></tr>
                   </thead>
                   <tbody>
-                    {alumnos.length === 0 ? <tr><td colSpan="4">No hay alumnos</td></tr> : alumnos.map(alumno => (
-                      <tr key={alumno.id}>
-                        <td>{alumno.nombre}</td>
-                        <td>{alumno.apellido}</td>
-                        <td>{alumno.grado}</td>
-                        <td>{alumno.seccion}</td>
-                      </tr>
-                    ))}
+                    {alumnos.length === 0 ? (
+                      <tr><td colSpan="4" style={{ textAlign: 'center' }}>No hay alumnos registrados</td></tr>
+                    ) : (
+                      alumnos.map(alumno => (
+                        <tr key={alumno.id}>
+                          <td>{alumno.nombre}</td>
+                          <td>{alumno.apellido}</td>
+                          <td>{alumno.grado}</td>
+                          <td>{alumno.seccion}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               )}
