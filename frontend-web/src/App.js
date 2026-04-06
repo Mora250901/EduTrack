@@ -8,6 +8,12 @@ function App() {
   const [alumnoSeleccionado, setAlumnoSeleccionado] = useState('');
   const [nuevoCaso, setNuevoCaso] = useState({ titulo: '', descripcion: '', prioridad: 'media' });
   const [creandoCaso, setCreandoCaso] = useState(false);
+
+  const [seguimientos, setSeguimientos] = useState({});
+  const [mostrarFormularioSeguimiento, setMostrarFormularioSeguimiento] = useState(false);
+  const [casoSeleccionado, setCasoSeleccionado] = useState(null);
+  const [nuevoSeguimiento, setNuevoSeguimiento] = useState({ tipo: 'entrevista', descripcion: '' });
+  const [creandoSeguimiento, setCreandoSeguimiento] = useState(false);
   // ==================== TODOS LOS HOOKS JUNTOS AL INICIO ====================
   
   // Hooks de autenticación
@@ -359,6 +365,57 @@ function App() {
     }
   };
 
+  // ==================== FUNCIONES PARA SEGUIMIENTOS ====================
+
+  const cargarSeguimientos = async (casoId) => {
+      try {
+          const response = await fetch(`https://edutrack-backend-2ycx.onrender.com/api/seguimientos/caso/${casoId}`);
+          const data = await response.json();
+          setSeguimientos(prev => ({ ...prev, [casoId]: data }));
+      } catch (error) {
+          console.error('Error:', error);
+      }
+  };
+
+  const agregarSeguimiento = async (e) => {
+      e.preventDefault();
+      setCreandoSeguimiento(true);
+      try {
+          const response = await fetch('https://edutrack-backend-2ycx.onrender.com/api/seguimientos', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  caso_id: casoSeleccionado,
+                  tipo: nuevoSeguimiento.tipo,
+                  descripcion: nuevoSeguimiento.descripcion,
+                  realizado_por: usuario?.id
+              })
+          });
+          if (response.ok) {
+              setMostrarFormularioSeguimiento(false);
+              setNuevoSeguimiento({ tipo: 'entrevista', descripcion: '' });
+              cargarSeguimientos(casoSeleccionado);
+              setMensaje('✅ Seguimiento agregado');
+              setTimeout(() => setMensaje(''), 3000);
+          }
+      } catch (error) {
+          console.error('Error:', error);
+          setMensaje('❌ Error al agregar seguimiento');
+      } finally {
+          setCreandoSeguimiento(false);
+      }
+  };
+
+  const toggleSeguimientos = (casoId) => {
+      if (seguimientos[casoId]) {
+          // Si ya están cargados, los ocultamos
+          setSeguimientos(prev => ({ ...prev, [casoId]: undefined }));
+      } else {
+          // Si no están cargados, los cargamos
+          cargarSeguimientos(casoId);
+      }
+  };
+
   // ==================== CONDICIÓN DE AUTENTICACIÓN ====================
 
   if (!token || !usuario) {
@@ -557,20 +614,147 @@ function App() {
                   <p>No hay casos activos</p>
                 ) : (
                   casos.filter(c => c.estado === 'activo').map(caso => (
-                    <div key={caso.id} style={{ backgroundColor: 'white', padding: '12px', marginBottom: '10px', borderRadius: '6px', borderLeft: `4px solid ${caso.prioridad === 'alta' ? '#f44336' : caso.prioridad === 'media' ? '#ff9800' : '#4caf50'}` }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <strong>{caso.titulo}</strong>
-                          <span style={{ marginLeft: '10px', fontSize: '14px', color: '#666' }}>{caso.alumnos?.nombre} {caso.alumnos?.apellido}</span>
-                          <div style={{ fontSize: '14px', marginTop: '5px' }}>{caso.descripcion}</div>
-                          <div style={{ fontSize: '12px', color: '#999', marginTop: '5px' }}>Prioridad: {caso.prioridad}</div>
-                        </div>
-                        <button onClick={() => cerrarCaso(caso.id)} style={{ padding: '4px 8px', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Cerrar Caso</button>
+                      <div key={caso.id} style={{ backgroundColor: 'white', padding: '12px', marginBottom: '10px', borderRadius: '6px', borderLeft: `4px solid ${caso.prioridad === 'alta' ? '#f44336' : caso.prioridad === 'media' ? '#ff9800' : '#4caf50'}` }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                              <div style={{ flex: 1 }}>
+                                  <strong>{caso.titulo}</strong>
+                                  <span style={{ marginLeft: '10px', fontSize: '14px', color: '#666' }}>{caso.alumnos?.nombre} {caso.alumnos?.apellido}</span>
+                                  <div style={{ fontSize: '14px', marginTop: '5px' }}>{caso.descripcion}</div>
+                                  <div style={{ fontSize: '12px', color: '#999', marginTop: '5px' }}>Prioridad: {caso.prioridad}</div>
+                                  
+                                  {/* Botón para ver seguimientos */}
+                                  <button 
+                                      onClick={() => toggleSeguimientos(caso.id)}
+                                      style={{ marginTop: '10px', padding: '4px 8px', backgroundColor: '#2196F3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
+                                  >
+                                      {seguimientos[caso.id] ? '📋 Ocultar seguimientos' : '📋 Ver seguimientos'}
+                                  </button>
+                                  
+                                  {/* Lista de seguimientos */}
+                                  {seguimientos[caso.id] && seguimientos[caso.id].length > 0 && (
+                                      <div style={{ marginTop: '10px', paddingLeft: '15px', borderLeft: '2px solid #ccc' }}>
+                                          <strong style={{ fontSize: '13px' }}>Seguimientos:</strong>
+                                          {seguimientos[caso.id].map(seg => (
+                                              <div key={seg.id} style={{ fontSize: '12px', marginTop: '8px', padding: '8px', backgroundColor: '#f9f9f9', borderRadius: '4px' }}>
+                                                  <span style={{ fontWeight: 'bold' }}>
+                                                      {seg.tipo === 'entrevista' ? '🗣️ Entrevista' : 
+                                                      seg.tipo === 'derivacion' ? '📎 Derivación' : 
+                                                      seg.tipo === 'taller' ? '📚 Taller' : 
+                                                      seg.tipo === 'reunion_padres' ? '👪 Reunión padres' : '📝 Seguimiento'}
+                                                  </span>
+                                                  <span style={{ fontSize: '11px', color: '#999', marginLeft: '10px' }}>
+                                                      {new Date(seg.fecha).toLocaleDateString()}
+                                                  </span>
+                                                  <div style={{ marginTop: '4px' }}>{seg.descripcion}</div>
+                                              </div>
+                                          ))}
+                                      </div>
+                                  )}
+                                  
+                                  {/* Botón para agregar seguimiento */}
+                                  <button 
+                                      onClick={() => {
+                                          setCasoSeleccionado(caso.id);
+                                          setMostrarFormularioSeguimiento(true);
+                                      }}
+                                      style={{ marginTop: '10px', marginLeft: '10px', padding: '4px 8px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
+                                  >
+                                      + Agregar seguimiento
+                                  </button>
+                              </div>
+                              <button onClick={() => cerrarCaso(caso.id)} style={{ padding: '4px 8px', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Cerrar Caso</button>
+                          </div>
                       </div>
-                    </div>
                   ))
                 )}
               </div>
+
+              {/* Modal para agregar seguimiento */}
+              {mostrarFormularioSeguimiento && (
+                  <div style={{ 
+                      position: 'fixed', 
+                      top: 0, 
+                      left: 0, 
+                      right: 0, 
+                      bottom: 0, 
+                      backgroundColor: 'rgba(0,0,0,0.5)', 
+                      display: 'flex', 
+                      justifyContent: 'center', 
+                      alignItems: 'center', 
+                      zIndex: 1000 
+                  }}>
+                      <div style={{ 
+                          backgroundColor: 'white', 
+                          padding: '20px', 
+                          borderRadius: '8px', 
+                          width: '400px' 
+                      }}>
+                          <h3>Agregar Seguimiento</h3>
+                          <form onSubmit={agregarSeguimiento}>
+                              <select 
+                                  value={nuevoSeguimiento.tipo} 
+                                  onChange={(e) => setNuevoSeguimiento({...nuevoSeguimiento, tipo: e.target.value})}
+                                  style={{ 
+                                      width: '100%', 
+                                      padding: '8px', 
+                                      marginBottom: '10px', 
+                                      borderRadius: '4px', 
+                                      border: '1px solid #ccc' 
+                                  }}
+                              >
+                                  <option value="entrevista">🗣️ Entrevista</option>
+                                  <option value="derivacion">📎 Derivación</option>
+                                  <option value="taller">📚 Taller</option>
+                                  <option value="reunion_padres">👪 Reunión con padres</option>
+                                  <option value="seguimiento">📝 Seguimiento</option>
+                              </select>
+                              <textarea 
+                                  placeholder="Descripción de la intervención" 
+                                  value={nuevoSeguimiento.descripcion} 
+                                  onChange={(e) => setNuevoSeguimiento({...nuevoSeguimiento, descripcion: e.target.value})}
+                                  required
+                                  style={{ 
+                                      width: '100%', 
+                                      padding: '8px', 
+                                      marginBottom: '10px', 
+                                      borderRadius: '4px', 
+                                      border: '1px solid #ccc', 
+                                      minHeight: '80px' 
+                                  }}
+                              />
+                              <button 
+                                  type="submit" 
+                                  disabled={creandoSeguimiento} 
+                                  style={{ 
+                                      padding: '8px 16px', 
+                                      backgroundColor: '#4CAF50', 
+                                      color: 'white', 
+                                      border: 'none', 
+                                      borderRadius: '4px', 
+                                      cursor: 'pointer' 
+                                  }}
+                              >
+                                  {creandoSeguimiento ? 'Guardando...' : 'Guardar Seguimiento'}
+                              </button>
+                              <button 
+                                  type="button" 
+                                  onClick={() => setMostrarFormularioSeguimiento(false)} 
+                                  style={{ 
+                                      marginLeft: '10px', 
+                                      padding: '8px 16px', 
+                                      backgroundColor: '#999', 
+                                      color: 'white', 
+                                      border: 'none', 
+                                      borderRadius: '4px', 
+                                      cursor: 'pointer' 
+                                  }}
+                              >
+                                  Cancelar
+                              </button>
+                          </form>
+                      </div>
+                  </div>
+              )}
 
               {/* Tabla de alumnos */}
               <h2>📋 Lista de Alumnos</h2>

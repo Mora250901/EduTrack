@@ -320,6 +320,34 @@ app.get('/api/seguimientos/caso/:caso_id', async (req, res) => {
     res.json(data);
 });
 
+// ==================== RUTAS PARA SEGUIMIENTOS ====================
+
+// Obtener seguimientos de un caso
+app.get('/api/seguimientos/caso/:caso_id', async (req, res) => {
+    const { caso_id } = req.params;
+    const { data, error } = await supabase
+        .from('seguimientos')
+        .select('*')
+        .eq('caso_id', caso_id)
+        .order('fecha', { ascending: true });
+    
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+// Agregar seguimiento a un caso
+app.post('/api/seguimientos', async (req, res) => {
+    const { caso_id, tipo, descripcion, realizado_por } = req.body;
+    
+    const { data, error } = await supabase
+        .from('seguimientos')
+        .insert([{ caso_id, tipo, descripcion, realizado_por }])
+        .select();
+    
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data[0]);
+});
+
 // Iniciar servidor
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
