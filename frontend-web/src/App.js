@@ -86,7 +86,7 @@ function App() {
 
   const cargarAlumnos = () => {
     setLoading(true);
-    fetch('http://localhost:3000/api/alumnos')
+    fetch('https://edutrack-backend-2ycx.onrender.com/api/alumnos')
       .then(res => res.json())
       .then(data => {
         setAlumnos(data);
@@ -100,7 +100,7 @@ function App() {
 
   const cargarAlertas = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/alertas/pendientes');
+      const response = await fetch('https://edutrack-backend-2ycx.onrender.com/api/alertas/pendientes');
       const data = await response.json();
       setAlertas(data);
     } catch (error) {
@@ -113,7 +113,7 @@ function App() {
       // Obtener fecha actual
       const hoy = new Date().toISOString().split('T')[0];
       // Por ahora, obtenemos todas las asistencias (simplificado)
-      const response = await fetch('http://localhost:3000/api/asistencias');
+      const response = await fetch('https://edutrack-backend-2ycx.onrender.com/api/asistencias');
       if (response.ok) {
         const data = await response.json();
         const asistenciasFecha = data.filter(a => a.fecha === hoy);
@@ -134,7 +134,7 @@ function App() {
   const cargarReporte = async () => {
     setCargandoReporte(true);
     try {
-      const response = await fetch(`http://localhost:3000/api/asistencias/reporte?fecha=${fechaReporte}`);
+      const response = await fetch(`https://edutrack-backend-2ycx.onrender.com/api/asistencias/reporte?fecha=${fechaReporte}`);
       if (response.ok) {
         const data = await response.json();
         setReporteData(data);
@@ -185,7 +185,7 @@ function App() {
   const verificarAlertas = async (alumnoId, faltasConsecutivas) => {
     if (faltasConsecutivas >= 3) {
       try {
-        await fetch('http://localhost:3000/api/alertas', {
+        await fetch('https://edutrack-backend-2ycx.onrender.com/api/alertas', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -204,7 +204,7 @@ function App() {
 
   const marcarAtendida = async (alertaId) => {
     try {
-      await fetch(`http://localhost:3000/api/alertas/${alertaId}/atender`, {
+      await fetch(`https://edutrack-backend-2ycx.onrender.com/api/alertas/${alertaId}/atender`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -227,7 +227,7 @@ function App() {
     setSaving(true);
 
     try {
-      const response = await fetch('http://localhost:3000/api/alumnos', {
+      const response = await fetch('https://edutrack-backend-2ycx.onrender.com/api/alumnos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)
@@ -259,7 +259,7 @@ function App() {
 
     setSaving(true);
     try {
-      const response = await fetch('http://localhost:3000/api/asistencias', {
+      const response = await fetch('https://edutrack-backend-2ycx.onrender.com/api/asistencias', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
