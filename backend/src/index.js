@@ -6,6 +6,11 @@ const { createClient } = require('@supabase/supabase-js');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'edutrack-secret-key-2024';
+
 // Inicializar Supabase
 const supabase = createClient(
     process.env.SUPABASE_URL,
@@ -118,6 +123,105 @@ app.put('/api/alertas/:id/atender', async (req, res) => {
     
     if (error) return res.status(500).json({ error: error.message });
     res.json(data[0]);
+});
+
+// Reporte de asistencia por fecha
+app.get('/api/asistencias/reporte', async (req, res) => {
+    const { fecha } = req.query;
+    
+    const { data, error } = await supabase
+        .from('asistencias')
+        .select(`
+            *,
+            alumnos (nombre, apellido, grado, seccion)
+        `)
+        .eq('fecha', fecha);
+    
+    if (error) return res.status(500).json({ error: error.message });
+    
+    // Formatear datos para el reporte
+    const reporte = data.map(item => ({
+        alumno_nombre: item.alumnos.nombre,
+        alumno_apellido: item.alumnos.apellido,
+        grado: item.alumnos.grado,
+        seccion: item.alumnos.seccion,
+        estado: item.estado,
+        observacion: item.observacion
+    }));
+    
+    res.json(reporte);
+});
+
+// Ruta de login
+app.post('/api/login', async (req, res) => {
+    const { email, password } = req.body;
+    
+    // Buscar usuario por email
+    const { data: usuarios, error } = await supabase
+        .from('usuarios')
+        .select('*')
+        .eq('email', email);
+    
+    if (error || !usuarios || usuarios.length === 0) {
+        return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+    
+    const usuario = usuarios[0];
+    
+    // Verificar contraseña (en texto plano por ahora, luego encriptar)
+    if (password !== usuario.password) {
+        return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+    
+    // Generar token JWT
+    const token = jwt.sign(
+        { id: usuario.id, email: usuario.email, rol: usuario.rol, nombre: usuario.nombre },
+        JWT_SECRET,
+        { expiresIn: '8h' }
+    );
+    
+    res.json({
+        token,
+        usuario: {
+            id: usuario.id,
+            nombre: usuario.nombre,
+            email: usuario.email,
+            rol: usuario.rol
+        }
+    });
+});
+
+// Middleware para verificar token
+const verificarToken = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).json({ error: 'Token no proporcionado' });
+    }
+    
+    const token = authHeader.split(' ')[1];
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.usuario = decoded;
+        next();
+    } catch (error) {
+        return res.status(401).json({ error: 'Token inválido' });
+    }
+};
+
+// Ruta protegida de ejemplo
+app.get('/api/perfil', verificarToken, (req, res) => {
+    res.json({ usuario: req.usuario });
+});
+
+// Obtener todas las asistencias (para reportes)
+app.get('/api/asistencias', async (req, res) => {
+    const { data, error } = await supabase
+        .from('asistencias')
+        .select('*, alumnos(nombre, apellido, grado, seccion)')
+        .order('fecha', { ascending: false });
+    
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
 });
 
 // Iniciar servidor
