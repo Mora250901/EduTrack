@@ -10,6 +10,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'edutrack-secret-key-2024';
+const SALT_ROUNDS = 10;
 
 // Inicializar Supabase
 const supabase = createClient(
@@ -152,7 +153,7 @@ app.get('/api/asistencias/reporte', async (req, res) => {
     res.json(reporte);
 });
 
-// Ruta de login
+// Ruta de login (con verificación de contraseña encriptada)
 app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
     
@@ -168,8 +169,9 @@ app.post('/api/login', async (req, res) => {
     
     const usuario = usuarios[0];
     
-    // Verificar contraseña (en texto plano por ahora, luego encriptar)
-    if (password !== usuario.password) {
+    // ✅ Verificar contraseña encriptada con bcrypt
+    const passwordValida = await bcrypt.compare(password, usuario.password);
+    if (!passwordValida) {
         return res.status(401).json({ error: 'Credenciales inválidas' });
     }
     
@@ -222,6 +224,22 @@ app.get('/api/asistencias', async (req, res) => {
     
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
+});
+
+// Registrar nuevo usuario (con contraseña encriptada)
+app.post('/api/registro', async (req, res) => {
+    const { nombre, email, password, rol } = req.body;
+    
+    // Encriptar contraseña
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+    
+    const { data, error } = await supabase
+        .from('usuarios')
+        .insert([{ nombre, email, password: hashedPassword, rol }])
+        .select();
+    
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data[0]);
 });
 
 // Iniciar servidor
