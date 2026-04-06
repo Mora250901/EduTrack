@@ -364,254 +364,154 @@ function App() {
         </div>
       )}
 
-      {/* VISTA DASHBOARD */}
+      {/* VISTA DASHBOARD - CONTENIDO SEGÚN ROL */}
       {vista === 'dashboard' && (
         <>
-          {/* Tarjetas de estadísticas */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px', marginBottom: '30px' }}>
-            <div style={{ backgroundColor: '#e3f2fd', padding: '20px', borderRadius: '8px', textAlign: 'center' }}>
-              <div style={{ fontSize: '32px', fontWeight: 'bold' }}>{stats.totalAlumnos}</div>
-              <div>Total Alumnos</div>
-            </div>
-            <div style={{ backgroundColor: '#fff3e0', padding: '20px', borderRadius: '8px', textAlign: 'center' }}>
-              <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#e65100' }}>{stats.alertasPendientes}</div>
-              <div>Alertas Pendientes</div>
-            </div>
-            <div style={{ backgroundColor: '#e8f5e9', padding: '20px', borderRadius: '8px', textAlign: 'center' }}>
-              <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#4caf50' }}>{stats.presentesHoy}</div>
-              <div>Presentes Hoy</div>
-            </div>
-            <div style={{ backgroundColor: '#ffebee', padding: '20px', borderRadius: '8px', textAlign: 'center' }}>
-              <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#f44336' }}>{stats.ausentesHoy}</div>
-              <div>Ausentes Hoy</div>
-            </div>
-          </div>
+          {/* VISTA PARA DIRECTOR */}
+          {usuario?.rol === 'director' && (
+            <>
+              {/* Tarjetas de estadísticas */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px', marginBottom: '30px' }}>
+                <div style={{ backgroundColor: '#e3f2fd', padding: '20px', borderRadius: '8px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '32px', fontWeight: 'bold' }}>{stats.totalAlumnos}</div>
+                  <div>Total Alumnos</div>
+                </div>
+                <div style={{ backgroundColor: '#fff3e0', padding: '20px', borderRadius: '8px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#e65100' }}>{stats.alertasPendientes}</div>
+                  <div>Alertas Pendientes</div>
+                </div>
+                <div style={{ backgroundColor: '#e8f5e9', padding: '20px', borderRadius: '8px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#4caf50' }}>{stats.presentesHoy}</div>
+                  <div>Presentes Hoy</div>
+                </div>
+                <div style={{ backgroundColor: '#ffebee', padding: '20px', borderRadius: '8px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#f44336' }}>{stats.ausentesHoy}</div>
+                  <div>Ausentes Hoy</div>
+                </div>
+              </div>
 
-          {/* Botón para ver reportes */}
-          <div style={{ marginBottom: '20px' }}>
-            <button
-              onClick={toggleReportes}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#9C27B0',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              {mostrarReportes ? '📊 Ocultar Reportes' : '📊 Ver Reportes de Asistencia'}
-            </button>
-          </div>
-
-          {/* Panel de Reportes */}
-          {mostrarReportes && (
-            <div style={{ 
-              backgroundColor: '#f3e5f5', 
-              padding: '15px', 
-              borderRadius: '8px',
-              marginBottom: '30px'
-            }}>
-              <h2>📈 Reporte de Asistencia</h2>
-              
-              <div style={{ marginBottom: '15px' }}>
-                <label>Seleccionar fecha: </label>
-                <input
-                  type="date"
-                  value={fechaReporte}
-                  onChange={(e) => setFechaReporte(e.target.value)}
-                  style={{ marginLeft: '10px', padding: '5px', borderRadius: '4px' }}
-                />
-                <button
-                  onClick={cargarReporte}
-                  style={{
-                    marginLeft: '10px',
-                    padding: '6px 12px',
-                    backgroundColor: '#9C27B0',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Buscar
-                </button>
-                <button
-                  onClick={exportarCSV}
-                  style={{
-                    marginLeft: '10px',
-                    padding: '6px 12px',
-                    backgroundColor: '#4CAF50',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  📎 Exportar a CSV
+              {/* Botón para ver reportes */}
+              <div style={{ marginBottom: '20px' }}>
+                <button onClick={toggleReportes} style={{ padding: '10px 20px', backgroundColor: '#9C27B0', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                  {mostrarReportes ? '📊 Ocultar Reportes' : '📊 Ver Reportes de Asistencia'}
                 </button>
               </div>
 
-              {cargandoReporte ? (
-                <p>Cargando...</p>
-              ) : (
+              {/* Panel de Reportes */}
+              {mostrarReportes && (
+                <div style={{ backgroundColor: '#f3e5f5', padding: '15px', borderRadius: '8px', marginBottom: '30px' }}>
+                  <h2>📈 Reporte de Asistencia</h2>
+                  <div style={{ marginBottom: '15px' }}>
+                    <label>Seleccionar fecha: </label>
+                    <input type="date" value={fechaReporte} onChange={(e) => setFechaReporte(e.target.value)} style={{ marginLeft: '10px', padding: '5px', borderRadius: '4px' }} />
+                    <button onClick={cargarReporte} style={{ marginLeft: '10px', padding: '6px 12px', backgroundColor: '#9C27B0', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Buscar</button>
+                    <button onClick={exportarCSV} style={{ marginLeft: '10px', padding: '6px 12px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>📎 Exportar a CSV</button>
+                  </div>
+                  {cargandoReporte ? <p>Cargando...</p> : (
+                    <table border="1" cellPadding="8" style={{ borderCollapse: 'collapse', width: '100%' }}>
+                      <thead style={{ backgroundColor: '#e1bee7' }}>
+                        <tr><th>Alumno</th><th>Grado</th><th>Sección</th><th>Estado</th><th>Observación</th></tr>
+                      </thead>
+                      <tbody>
+                        {reporteData.length === 0 ? <tr><td colSpan="5">No hay registros</td></tr> : reporteData.map((item, index) => (
+                          <tr key={index}>
+                            <td>{item.alumno_nombre} {item.alumno_apellido}</td>
+                            <td>{item.grado}</td>
+                            <td>{item.seccion}</td>
+                            <td style={{ color: item.estado === 'presente' ? '#4caf50' : item.estado === 'ausente' ? '#f44336' : '#ff9800' }}>
+                              {item.estado === 'presente' ? '✅ Presente' : item.estado === 'ausente' ? '❌ Ausente' : '⏰ Tarde'}
+                            </td>
+                            <td>{item.observacion || '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* VISTA PARA PSICÓLOGO */}
+          {usuario?.rol === 'psicologo' && (
+            <>
+              <div style={{ backgroundColor: '#e8f5e9', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
+                <h2>📋 Panel del Psicólogo</h2>
+                <p>Bienvenido, {usuario.nombre}. Aquí podrás gestionar los casos de los alumnos.</p>
+              </div>
+
+              {/* Panel de Alertas */}
+              <div style={{ backgroundColor: '#fff3e0', padding: '15px', borderRadius: '8px', marginBottom: '30px', border: '1px solid #ff9800' }}>
+                <h2 style={{ color: '#e65100' }}>⚠️ Alertas Pendientes</h2>
+                {alertas.length === 0 ? <p>✅ No hay alertas pendientes</p> : alertas.map(alerta => (
+                  <div key={alerta.id} style={{ backgroundColor: 'white', padding: '12px', marginBottom: '10px', borderRadius: '6px', borderLeft: `4px solid ${alerta.nivel === 'alto' ? '#f44336' : '#ff9800'}` }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <strong>{alerta.alumnos?.nombre} {alerta.alumnos?.apellido}</strong>
+                        <span style={{ marginLeft: '10px', fontSize: '14px', color: '#666' }}>{alerta.alumnos?.grado}° {alerta.alumnos?.seccion}</span>
+                        <div style={{ fontSize: '14px', marginTop: '5px' }}>{alerta.mensaje}</div>
+                      </div>
+                      <button onClick={() => marcarAtendida(alerta.id)} style={{ padding: '6px 12px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>✓ Marcar atendida</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Tabla de alumnos */}
+              <h2>📋 Lista de Alumnos</h2>
+              {loading ? <p>Cargando...</p> : (
                 <table border="1" cellPadding="8" style={{ borderCollapse: 'collapse', width: '100%' }}>
-                  <thead style={{ backgroundColor: '#e1bee7' }}>
-                    <tr>
-                      <th>Alumno</th>
-                      <th>Grado</th>
-                      <th>Sección</th>
-                      <th>Estado</th>
-                      <th>Observación</th>
-                    </tr>
+                  <thead style={{ backgroundColor: '#f0f0f0' }}>
+                    <tr><th>Nombre</th><th>Apellido</th><th>Grado</th><th>Sección</th></tr>
                   </thead>
                   <tbody>
-                    {reporteData.length === 0 ? (
-                      <tr>
-                        <td colSpan="5" style={{ textAlign: 'center' }}>No hay registros para esta fecha</td>
+                    {alumnos.length === 0 ? <tr><td colSpan="4">No hay alumnos</td></tr> : alumnos.map(alumno => (
+                      <tr key={alumno.id}>
+                        <td>{alumno.nombre}</td>
+                        <td>{alumno.apellido}</td>
+                        <td>{alumno.grado}</td>
+                        <td>{alumno.seccion}</td>
                       </tr>
-                    ) : (
-                      reporteData.map((item, index) => (
-                        <tr key={index}>
-                          <td>{item.alumno_nombre} {item.alumno_apellido}</td>
-                          <td>{item.grado}</td>
-                          <td>{item.seccion}</td>
-                          <td style={{
-                            color: item.estado === 'presente' ? '#4caf50' : item.estado === 'ausente' ? '#f44336' : '#ff9800'
-                          }}>
-                            {item.estado === 'presente' ? '✅ Presente' : item.estado === 'ausente' ? '❌ Ausente' : '⏰ Tarde'}
-                          </td>
-                          <td>{item.observacion || '-'}</td>
-                        </tr>
-                      ))
-                    )}
+                    ))}
                   </tbody>
                 </table>
               )}
-            </div>
+            </>
           )}
 
-          {/* Panel de Alertas */}
-          <div style={{ 
-            backgroundColor: '#fff3e0', 
-            padding: '15px', 
-            borderRadius: '8px',
-            marginBottom: '30px',
-            border: '1px solid #ff9800'
-          }}>
-            <h2 style={{ color: '#e65100' }}>⚠️ Alertas Pendientes</h2>
-            {alertas.length === 0 ? (
-              <p style={{ color: '#4caf50' }}>✅ No hay alertas pendientes</p>
-            ) : (
-              alertas.map(alerta => (
-                <div key={alerta.id} style={{
-                  backgroundColor: 'white',
-                  padding: '12px',
-                  marginBottom: '10px',
-                  borderRadius: '6px',
-                  borderLeft: `4px solid ${alerta.nivel === 'alto' ? '#f44336' : '#ff9800'}`
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <strong>{alerta.alumnos?.nombre} {alerta.alumnos?.apellido}</strong>
-                      <span style={{ marginLeft: '10px', fontSize: '14px', color: '#666' }}>
-                        {alerta.alumnos?.grado}° {alerta.alumnos?.seccion}
-                      </span>
-                      <div style={{ fontSize: '14px', marginTop: '5px' }}>{alerta.mensaje}</div>
-                    </div>
-                    <button
-                      onClick={() => marcarAtendida(alerta.id)}
-                      style={{
-                        padding: '6px 12px',
-                        backgroundColor: '#4CAF50',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      ✓ Marcar como atendida
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+          {/* VISTA PARA DOCENTE */}
+          {usuario?.rol === 'docente' && (
+            <>
+              <div style={{ backgroundColor: '#e3f2fd', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
+                <h2>📝 Panel del Docente</h2>
+                <p>Bienvenido, {usuario.nombre}. Registra la asistencia de tus alumnos.</p>
+              </div>
 
-          {/* Sección de Asistencia Rápida */}
-          <div style={{ 
-            backgroundColor: '#e3f2fd', 
-            padding: '15px', 
-            borderRadius: '8px',
-            marginBottom: '30px'
-          }}>
-            <h2>📝 Registrar Asistencia Rápida</h2>
-            <form onSubmit={registrarAsistencia}>
-              <div style={{ marginBottom: '10px' }}>
-                <select
-                  value={selectedAlumno}
-                  onChange={(e) => setSelectedAlumno(e.target.value)}
-                  required
-                  style={{ padding: '8px', width: '100%', borderRadius: '4px', border: '1px solid #ccc' }}
-                >
-                  <option value="">Selecciona un alumno</option>
-                  {alumnos.map(alumno => (
-                    <option key={alumno.id} value={alumno.id}>
-                      {alumno.nombre} {alumno.apellido} - {alumno.grado}° {alumno.seccion}
-                    </option>
-                  ))}
-                </select>
+              {/* Sección de Asistencia */}
+              <div style={{ backgroundColor: '#e3f2fd', padding: '15px', borderRadius: '8px', marginBottom: '30px' }}>
+                <h2>📝 Registrar Asistencia</h2>
+                <form onSubmit={registrarAsistencia}>
+                  <div style={{ marginBottom: '10px' }}>
+                    <select value={selectedAlumno} onChange={(e) => setSelectedAlumno(e.target.value)} required style={{ padding: '8px', width: '100%', borderRadius: '4px', border: '1px solid #ccc' }}>
+                      <option value="">Selecciona un alumno</option>
+                      {alumnos.map(alumno => (
+                        <option key={alumno.id} value={alumno.id}>{alumno.nombre} {alumno.apellido} - {alumno.grado}° {alumno.seccion}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                    <label><input type="radio" name="estado" value="presente" checked={asistencia.estado === 'presente'} onChange={handleAsistenciaChange} /> ✅ Presente</label>
+                    <label><input type="radio" name="estado" value="ausente" checked={asistencia.estado === 'ausente'} onChange={handleAsistenciaChange} /> ❌ Ausente</label>
+                    <label><input type="radio" name="estado" value="tarde" checked={asistencia.estado === 'tarde'} onChange={handleAsistenciaChange} /> ⏰ Tarde</label>
+                  </div>
+                  <div style={{ marginBottom: '10px' }}>
+                    <input type="text" name="observacion" placeholder="Observación (opcional)" value={asistencia.observacion} onChange={handleAsistenciaChange} style={{ padding: '8px', width: '100%', borderRadius: '4px', border: '1px solid #ccc' }} />
+                  </div>
+                  <button type="submit" disabled={saving} style={{ padding: '8px 16px', backgroundColor: '#2196F3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>{saving ? 'Registrando...' : 'Registrar Asistencia'}</button>
+                </form>
               </div>
-              
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <input
-                    type="radio"
-                    name="estado"
-                    value="presente"
-                    checked={asistencia.estado === 'presente'}
-                    onChange={handleAsistenciaChange}
-                  />
-                  ✅ Presente
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <input
-                    type="radio"
-                    name="estado"
-                    value="ausente"
-                    checked={asistencia.estado === 'ausente'}
-                    onChange={handleAsistenciaChange}
-                  />
-                  ❌ Ausente
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <input
-                    type="radio"
-                    name="estado"
-                    value="tarde"
-                    checked={asistencia.estado === 'tarde'}
-                    onChange={handleAsistenciaChange}
-                  />
-                  ⏰ Tarde
-                </label>
-              </div>
-              
-              <button 
-                type="submit" 
-                disabled={saving}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#2196F3',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: saving ? 'not-allowed' : 'pointer'
-                }}
-              >
-                {saving ? 'Registrando...' : 'Registrar Asistencia'}
-              </button>
-            </form>
-          </div>
+            </>
+          )}
         </>
       )}
 
