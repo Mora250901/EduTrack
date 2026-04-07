@@ -805,11 +805,11 @@ function App() {
               {loading ? <p>Cargando...</p> : (
                 <table border="1" cellPadding="8" style={{ borderCollapse: 'collapse', width: '100%' }}>
                   <thead style={{ backgroundColor: '#f0f0f0' }}>
-                    <tr><th>Nombre</th><th>Apellido</th><th>Grado</th><th>Sección</th></tr>
+                    <tr><th>Nombre</th><th>Apellido</th><th>Grado</th><th>Sección</th><th>Teléfono del Padre</th></tr>
                   </thead>
                   <tbody>
                     {alumnos.length === 0 ? (
-                      <tr><td colSpan="4" style={{ textAlign: 'center' }}>No hay alumnos registrados</td></tr>
+                      <tr><td colSpan="5" style={{ textAlign: 'center' }}>No hay alumnos registrados</td></tr>
                     ) : (
                       alumnos.map(alumno => (
                         <tr key={alumno.id}>
