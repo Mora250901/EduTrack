@@ -54,7 +54,8 @@ function App() {
     nombre: '',
     apellido: '',
     grado: '',
-    seccion: ''
+    seccion: '',
+    telefono_padre: ''
   });
 
    // ==================== FUNCIONES DE AUTENTICACIÓN ====================
@@ -217,6 +218,7 @@ function App() {
   const verificarAlertas = async (alumnoId, faltasConsecutivas) => {
     if (faltasConsecutivas >= 3) {
       try {
+        // Crear alerta
         await fetch('https://edutrack-backend-2ycx.onrender.com/api/alertas', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -227,7 +229,19 @@ function App() {
             mensaje: `El alumno tiene ${faltasConsecutivas} faltas consecutivas`
           })
         });
+        
+        // Enviar notificación WhatsApp al padre
+        await fetch('https://edutrack-backend-2ycx.onrender.com/api/notificar/padre', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            alumno_id: alumnoId,
+            mensaje: `⚠️ ALERTA DE ASISTENCIA: Su hijo(a) tiene ${faltasConsecutivas} faltas consecutivas. Por favor, comunicarse con el colegio para conocer más detalles.`
+          })
+        });
+        
         cargarAlertas(); // Recargar alertas
+        console.log(`✅ Alerta y notificación enviada para alumno: ${alumnoId}`);
       } catch (error) {
         console.error('Error al crear alerta:', error);
       }
@@ -894,6 +908,14 @@ function App() {
                 value={form.seccion}
                 onChange={handleChange}
                 required
+                style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+              />
+              <input
+                type="tel"
+                name="telefono_padre"
+                placeholder="Teléfono del padre (WhatsApp)"
+                value={form.telefono_padre || ''}
+                onChange={handleChange}
                 style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
               />
               <button 

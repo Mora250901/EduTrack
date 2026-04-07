@@ -49,11 +49,11 @@ app.get('/api/alumnos', async (req, res) => {
 
 // Crear un nuevo alumno
 app.post('/api/alumnos', async (req, res) => {
-    const { nombre, apellido, grado, seccion } = req.body;
+    const { nombre, apellido, grado, seccion, telefono_padre } = req.body;
     
     const { data, error } = await supabase
         .from('alumnos')
-        .insert([{ nombre, apellido, grado, seccion }])
+        .insert([{ nombre, apellido, grado, seccion, telefono_padre }])
         .select();
     
     if (error) return res.status(500).json({ error: error.message });
@@ -391,6 +391,39 @@ app.post('/api/seguimientos', async (req, res) => {
     
     if (error) return res.status(500).json({ error: error.message });
     res.json(data[0]);
+});
+
+// ==================== NOTIFICACIONES A PADRES ====================
+
+app.post('/api/notificar/padre', async (req, res) => {
+    const { alumno_id, mensaje } = req.body;
+    
+    const { data: alumno, error } = await supabase
+        .from('alumnos')
+        .select('nombre, apellido, telefono_padre')
+        .eq('id', alumno_id)
+        .single();
+    
+    if (error) return res.status(500).json({ error: error.message });
+    
+    if (!alumno.telefono_padre) {
+        return res.status(400).json({ error: 'El alumno no tiene número de teléfono del padre registrado' });
+    }
+    
+    console.log(`
+    =========================================
+    📱 NOTIFICACIÓN WHATSAPP A PADRE (SIMULADA)
+    =========================================
+    Para: ${alumno.telefono_padre}
+    Alumno: ${alumno.nombre} ${alumno.apellido}
+    Mensaje: ${mensaje}
+    =========================================
+    `);
+    
+    res.json({ 
+        success: true, 
+        message: 'Notificación enviada al padre (simulada)'
+    });
 });
 
 // Iniciar servidor
