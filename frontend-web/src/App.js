@@ -817,6 +817,7 @@ function App() {
                           <td>{alumno.apellido}</td>
                           <td>{alumno.grado}</td>
                           <td>{alumno.seccion}</td>
+                          <td>{alumno.telefono_padre}</td>
                         </tr>
                       ))
                     )}
