@@ -158,7 +158,6 @@ app.get('/api/asistencias/reporte', async (req, res) => {
     
     if (error) return res.status(500).json({ error: error.message });
     
-    // Formatear datos para el reporte
     const reporte = data.map(item => ({
         alumno_nombre: item.alumnos.nombre,
         alumno_apellido: item.alumnos.apellido,
@@ -171,11 +170,85 @@ app.get('/api/asistencias/reporte', async (req, res) => {
     res.json(reporte);
 });
 
-// Ruta de login (con verificación de contraseña encriptada)
+// Estadísticas para gráficos (DEBE IR ANTES de /:alumno_id)
+app.get('/api/asistencias/estadisticas', async (req, res) => {
+    const { data: alumnos, error: alumnosError } = await supabase
+        .from('alumnos')
+        .select('*');
+    
+    if (alumnosError) return res.status(500).json({ error: alumnosError.message });
+    
+    const hoy = new Date().toISOString().split('T')[0];
+    const { data: asistencias, error: asisError } = await supabase
+        .from('asistencias')
+        .select('*')
+        .eq('fecha', hoy);
+    
+    if (asisError) return res.status(500).json({ error: asisError.message });
+    
+    const grupos = {};
+    alumnos.forEach(alumno => {
+        const key = `${alumno.grado}_${alumno.seccion}`;
+        if (!grupos[key]) {
+            grupos[key] = {
+                grado: alumno.grado,
+                seccion: alumno.seccion,
+                total: 0,
+                presente: 0,
+                ausente: 0,
+                tarde: 0
+            };
+        }
+        grupos[key].total++;
+        
+        const asistencia = asistencias.find(a => a.alumno_id === alumno.id);
+        if (asistencia) {
+            if (asistencia.estado === 'presente') grupos[key].presente++;
+            else if (asistencia.estado === 'ausente') grupos[key].ausente++;
+            else if (asistencia.estado === 'tarde') grupos[key].tarde++;
+        }
+    });
+    
+    const resultado = Object.values(grupos).map(grupo => ({
+        grado: grupo.grado,
+        seccion: grupo.seccion,
+        porcentajePresente: grupo.total > 0 ? (grupo.presente / grupo.total) * 100 : 0,
+        porcentajeAusente: grupo.total > 0 ? (grupo.ausente / grupo.total) * 100 : 0,
+        porcentajeTarde: grupo.total > 0 ? (grupo.tarde / grupo.total) * 100 : 0
+    }));
+    
+    res.json(resultado);
+});
+
+// Obtener todas las asistencias (para reportes)
+app.get('/api/asistencias', async (req, res) => {
+    const { data, error } = await supabase
+        .from('asistencias')
+        .select('*, alumnos(nombre, apellido, grado, seccion)')
+        .order('fecha', { ascending: false });
+    
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+// Obtener asistencias de un alumno específico (DEBE IR AL FINAL)
+app.get('/api/asistencias/:alumno_id', async (req, res) => {
+    const { alumno_id } = req.params;
+    
+    const { data, error } = await supabase
+        .from('asistencias')
+        .select('*')
+        .eq('alumno_id', alumno_id)
+        .order('fecha', { ascending: false });
+    
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+// Ruta de login
 app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
     
-    // Buscar usuario por email
     const { data: usuarios, error } = await supabase
         .from('usuarios')
         .select('*')
@@ -187,13 +260,11 @@ app.post('/api/login', async (req, res) => {
     
     const usuario = usuarios[0];
     
-    // ✅ Verificar contraseña encriptada con bcrypt
     const passwordValida = await bcrypt.compare(password, usuario.password);
     if (!passwordValida) {
         return res.status(401).json({ error: 'Credenciales inválidas' });
     }
     
-    // Generar token JWT
     const token = jwt.sign(
         { id: usuario.id, email: usuario.email, rol: usuario.rol, nombre: usuario.nombre },
         JWT_SECRET,
@@ -233,22 +304,10 @@ app.get('/api/perfil', verificarToken, (req, res) => {
     res.json({ usuario: req.usuario });
 });
 
-// Obtener todas las asistencias (para reportes)
-app.get('/api/asistencias', async (req, res) => {
-    const { data, error } = await supabase
-        .from('asistencias')
-        .select('*, alumnos(nombre, apellido, grado, seccion)')
-        .order('fecha', { ascending: false });
-    
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data);
-});
-
-// Registrar nuevo usuario (con contraseña encriptada)
+// Registrar nuevo usuario
 app.post('/api/registro', async (req, res) => {
     const { nombre, email, password, rol } = req.body;
     
-    // Encriptar contraseña
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
     
     const { data, error } = await supabase
@@ -262,7 +321,6 @@ app.post('/api/registro', async (req, res) => {
 
 // ==================== RUTAS PARA PSICÓLOGO ====================
 
-// Obtener todos los casos
 app.get('/api/casos', async (req, res) => {
     const { data, error } = await supabase
         .from('casos')
@@ -273,7 +331,6 @@ app.get('/api/casos', async (req, res) => {
     res.json(data);
 });
 
-// Obtener casos de un alumno específico
 app.get('/api/casos/alumno/:alumno_id', async (req, res) => {
     const { alumno_id } = req.params;
     const { data, error } = await supabase
@@ -286,7 +343,6 @@ app.get('/api/casos/alumno/:alumno_id', async (req, res) => {
     res.json(data);
 });
 
-// Crear un nuevo caso
 app.post('/api/casos', async (req, res) => {
     const { alumno_id, titulo, descripcion, prioridad, creado_por } = req.body;
     
@@ -299,20 +355,6 @@ app.post('/api/casos', async (req, res) => {
     res.json(data[0]);
 });
 
-// Agregar seguimiento a un caso
-app.post('/api/seguimientos', async (req, res) => {
-    const { caso_id, tipo, descripcion, realizado_por } = req.body;
-    
-    const { data, error } = await supabase
-        .from('seguimientos')
-        .insert([{ caso_id, tipo, descripcion, realizado_por }])
-        .select();
-    
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data[0]);
-});
-
-// Cerrar un caso
 app.put('/api/casos/:id/cerrar', async (req, res) => {
     const { id } = req.params;
     const { data, error } = await supabase
@@ -325,22 +367,8 @@ app.put('/api/casos/:id/cerrar', async (req, res) => {
     res.json(data[0]);
 });
 
-// Obtener seguimientos de un caso
-app.get('/api/seguimientos/caso/:caso_id', async (req, res) => {
-    const { caso_id } = req.params;
-    const { data, error } = await supabase
-        .from('seguimientos')
-        .select('*')
-        .eq('caso_id', caso_id)
-        .order('fecha', { ascending: true });
-    
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data);
-});
-
 // ==================== RUTAS PARA SEGUIMIENTOS ====================
 
-// Obtener seguimientos de un caso
 app.get('/api/seguimientos/caso/:caso_id', async (req, res) => {
     const { caso_id } = req.params;
     const { data, error } = await supabase
@@ -353,7 +381,6 @@ app.get('/api/seguimientos/caso/:caso_id', async (req, res) => {
     res.json(data);
 });
 
-// Agregar seguimiento a un caso
 app.post('/api/seguimientos', async (req, res) => {
     const { caso_id, tipo, descripcion, realizado_por } = req.body;
     
@@ -364,61 +391,6 @@ app.post('/api/seguimientos', async (req, res) => {
     
     if (error) return res.status(500).json({ error: error.message });
     res.json(data[0]);
-});
-
-// Estadísticas para gráficos
-app.get('/api/asistencias/estadisticas', async (req, res) => {
-    // Obtener todos los alumnos
-    const { data: alumnos, error: alumnosError } = await supabase
-        .from('alumnos')
-        .select('*');
-    
-    if (alumnosError) return res.status(500).json({ error: alumnosError.message });
-    
-    // Obtener asistencias de hoy
-    const hoy = new Date().toISOString().split('T')[0];
-    const { data: asistencias, error: asisError } = await supabase
-        .from('asistencias')
-        .select('*')
-        .eq('fecha', hoy);
-    
-    if (asisError) return res.status(500).json({ error: asisError.message });
-    
-    // Agrupar por grado y sección
-    const grupos = {};
-    alumnos.forEach(alumno => {
-        const key = `${alumno.grado}_${alumno.seccion}`;
-        if (!grupos[key]) {
-            grupos[key] = {
-                grado: alumno.grado,
-                seccion: alumno.seccion,
-                total: 0,
-                presente: 0,
-                ausente: 0,
-                tarde: 0
-            };
-        }
-        grupos[key].total++;
-        
-        // Buscar asistencia del alumno
-        const asistencia = asistencias.find(a => a.alumno_id === alumno.id);
-        if (asistencia) {
-            if (asistencia.estado === 'presente') grupos[key].presente++;
-            else if (asistencia.estado === 'ausente') grupos[key].ausente++;
-            else if (asistencia.estado === 'tarde') grupos[key].tarde++;
-        }
-    });
-    
-    // Calcular porcentajes
-    const resultado = Object.values(grupos).map(grupo => ({
-        grado: grupo.grado,
-        seccion: grupo.seccion,
-        porcentajePresente: grupo.total > 0 ? (grupo.presente / grupo.total) * 100 : 0,
-        porcentajeAusente: grupo.total > 0 ? (grupo.ausente / grupo.total) * 100 : 0,
-        porcentajeTarde: grupo.total > 0 ? (grupo.tarde / grupo.total) * 100 : 0
-    }));
-    
-    res.json(resultado);
 });
 
 // Iniciar servidor
