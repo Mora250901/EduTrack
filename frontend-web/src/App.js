@@ -280,7 +280,7 @@ function App() {
       });
       const nuevoAlumno = await response.json();
       setAlumnos([...alumnos, nuevoAlumno]);
-      setForm({ nombre: '', apellido: '', grado: '', seccion: '' });
+      setForm({ nombre: '', apellido: '', grado: '', seccion: '', telefono_padre: '' });
       setMensaje('✅ Alumno agregado correctamente');
       setTimeout(() => setMensaje(''), 3000);
     } catch (error) {
@@ -948,12 +948,13 @@ function App() {
                   <th>Apellido</th>
                   <th>Grado</th>
                   <th>Sección</th>
+                  <th>Teléfono del Padre</th>
                 </tr>
               </thead>
               <tbody>
                 {alumnos.length === 0 ? (
                   <tr>
-                    <td colSpan="4" style={{ textAlign: 'center' }}>No hay alumnos registrados</td>
+                    <td colSpan="5" style={{ textAlign: 'center' }}>No hay alumnos registrados</td>
                   </tr>
                 ) : (
                   alumnos.map(alumno => (
@@ -962,6 +963,7 @@ function App() {
                       <td>{alumno.apellido}</td>
                       <td>{alumno.grado}</td>
                       <td>{alumno.seccion}</td>
+                      <td>{alumno.telefono_padre}</td>
                     </tr>
                   ))
                 )}
