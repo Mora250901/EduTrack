@@ -64,12 +64,30 @@ app.post('/api/alumnos', async (req, res) => {
 app.post('/api/asistencias', async (req, res) => {
     const { alumno_id, fecha, estado, observacion, registrado_por } = req.body;
     
+    // Si registrado_por es 'sistema' o no es un UUID válido, lo guardamos como NULL
+    let registradoPorUUID = null;
+    
+    // Verificar si es un UUID válido
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (registrado_por && uuidRegex.test(registrado_por)) {
+        registradoPorUUID = registrado_por;
+    }
+    
     const { data, error } = await supabase
         .from('asistencias')
-        .insert([{ alumno_id, fecha, estado, observacion, registrado_por }])
+        .insert([{ 
+            alumno_id, 
+            fecha, 
+            estado, 
+            observacion, 
+            registrado_por: registradoPorUUID 
+        }])
         .select();
     
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) {
+        console.error('Error al insertar asistencia:', error);
+        return res.status(500).json({ error: error.message });
+    }
     res.json(data[0]);
 });
 
