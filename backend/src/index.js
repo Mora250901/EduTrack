@@ -348,6 +348,61 @@ app.post('/api/seguimientos', async (req, res) => {
     res.json(data[0]);
 });
 
+// Estadísticas para gráficos
+app.get('/api/asistencias/estadisticas', async (req, res) => {
+    // Obtener todos los alumnos
+    const { data: alumnos, error: alumnosError } = await supabase
+        .from('alumnos')
+        .select('*');
+    
+    if (alumnosError) return res.status(500).json({ error: alumnosError.message });
+    
+    // Obtener asistencias de hoy
+    const hoy = new Date().toISOString().split('T')[0];
+    const { data: asistencias, error: asisError } = await supabase
+        .from('asistencias')
+        .select('*')
+        .eq('fecha', hoy);
+    
+    if (asisError) return res.status(500).json({ error: asisError.message });
+    
+    // Agrupar por grado y sección
+    const grupos = {};
+    alumnos.forEach(alumno => {
+        const key = `${alumno.grado}_${alumno.seccion}`;
+        if (!grupos[key]) {
+            grupos[key] = {
+                grado: alumno.grado,
+                seccion: alumno.seccion,
+                total: 0,
+                presente: 0,
+                ausente: 0,
+                tarde: 0
+            };
+        }
+        grupos[key].total++;
+        
+        // Buscar asistencia del alumno
+        const asistencia = asistencias.find(a => a.alumno_id === alumno.id);
+        if (asistencia) {
+            if (asistencia.estado === 'presente') grupos[key].presente++;
+            else if (asistencia.estado === 'ausente') grupos[key].ausente++;
+            else if (asistencia.estado === 'tarde') grupos[key].tarde++;
+        }
+    });
+    
+    // Calcular porcentajes
+    const resultado = Object.values(grupos).map(grupo => ({
+        grado: grupo.grado,
+        seccion: grupo.seccion,
+        porcentajePresente: grupo.total > 0 ? (grupo.presente / grupo.total) * 100 : 0,
+        porcentajeAusente: grupo.total > 0 ? (grupo.ausente / grupo.total) * 100 : 0,
+        porcentajeTarde: grupo.total > 0 ? (grupo.tarde / grupo.total) * 100 : 0
+    }));
+    
+    res.json(resultado);
+});
+
 // Iniciar servidor
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);

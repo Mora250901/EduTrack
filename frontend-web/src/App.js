@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Login from './components/Login';
+import GraficoAsistencia from './components/GraficoAsistencia';
 
 function App() {
 
@@ -16,6 +17,9 @@ function App() {
   const [creandoSeguimiento, setCreandoSeguimiento] = useState(false);
   // ==================== TODOS LOS HOOKS JUNTOS AL INICIO ====================
   
+  // Hooks de graficos
+  const [datosGrafico, setDatosGrafico] = useState([]);
+
   // Hooks de autenticación
   const [token, setToken] = useState(null);
   const [usuario, setUsuario] = useState(null);
@@ -86,6 +90,9 @@ function App() {
       if (usuario.rol === 'psicologo') {
         cargarCasos();
       }
+      if (usuario.rol === 'director') {
+        cargarDatosGrafico();
+      }
     }
   }, [token, usuario]);
 
@@ -137,6 +144,16 @@ function App() {
     } catch (error) {
       console.error('Error:', error);
     }
+  };
+
+  const cargarDatosGrafico = async () => {
+      try {
+          const response = await fetch('https://edutrack-backend-2ycx.onrender.com/api/asistencias/estadisticas');
+          const data = await response.json();
+          setDatosGrafico(data);
+      } catch (error) {
+          console.error('Error al cargar datos del gráfico:', error);
+      }
   };
 
   const toggleReportes = () => {
@@ -514,6 +531,19 @@ function App() {
                   <div>Ausentes Hoy</div>
                 </div>
               </div>
+
+              {/* Gráfico de asistencia */}
+              {datosGrafico.length > 0 && (
+                  <div style={{ 
+                      backgroundColor: 'white', 
+                      padding: '20px', 
+                      borderRadius: '8px', 
+                      marginBottom: '30px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }}>
+                      <GraficoAsistencia data={datosGrafico} />
+                  </div>
+              )}
 
               {/* Botón para ver reportes */}
               <div style={{ marginBottom: '20px' }}>
