@@ -147,27 +147,43 @@ app.put('/api/alertas/:id/atender', async (req, res) => {
 // Reporte de asistencia por fecha
 app.get('/api/asistencias/reporte', async (req, res) => {
     const { fecha } = req.query;
+    console.log('Fecha recibida:', fecha); // LOG TEMPORAL
     
-    const { data, error } = await supabase
-        .from('asistencias')
-        .select(`
-            *,
-            alumnos (nombre, apellido, grado, seccion)
-        `)
-        .eq('fecha', fecha);
+    if (!fecha) {
+        console.log('Error: No se proporcionó fecha');
+        return res.status(400).json({ error: 'Fecha no proporcionada' });
+    }
     
-    if (error) return res.status(500).json({ error: error.message });
-    
-    const reporte = data.map(item => ({
-        alumno_nombre: item.alumnos.nombre,
-        alumno_apellido: item.alumnos.apellido,
-        grado: item.alumnos.grado,
-        seccion: item.alumnos.seccion,
-        estado: item.estado,
-        observacion: item.observacion
-    }));
-    
-    res.json(reporte);
+    try {
+        const { data, error } = await supabase
+            .from('asistencias')
+            .select(`
+                *,
+                alumnos (nombre, apellido, grado, seccion)
+            `)
+            .eq('fecha', fecha);
+        
+        if (error) {
+            console.log('Error de Supabase:', error);
+            return res.status(500).json({ error: error.message });
+        }
+        
+        console.log('Datos encontrados:', data.length); // LOG TEMPORAL
+        
+        const reporte = data.map(item => ({
+            alumno_nombre: item.alumnos.nombre,
+            alumno_apellido: item.alumnos.apellido,
+            grado: item.alumnos.grado,
+            seccion: item.alumnos.seccion,
+            estado: item.estado,
+            observacion: item.observacion
+        }));
+        
+        res.json(reporte);
+    } catch (err) {
+        console.log('Error inesperado:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Estadísticas para gráficos (DEBE IR ANTES de /:alumno_id)
