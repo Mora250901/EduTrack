@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createClient } from '@supabase/supabase-js';
 import Login from './components/Login';
 import Dashboard from './pages/Dashboard';
 import Alumnos from './pages/Alumnos';
@@ -7,13 +8,18 @@ import Alertas from './pages/Alertas';
 import Casos from './pages/Casos';
 import Reportes from './pages/Reportes';
 import { getAlumnos, getAlertasPendientes, getAsistencias, getCasos, getEstadisticasAsistencia } from './api';
-
+ 
+const supabase = createClient(
+    process.env.REACT_APP_SUPABASE_URL,
+    process.env.REACT_APP_SUPABASE_ANON_KEY
+);
+ 
 function App() {
     // ==================== ESTADO GLOBAL ====================
     const [token, setToken] = useState(null);
     const [usuario, setUsuario] = useState(null);
     const [vista, setVista] = useState('dashboard');
-
+ 
     const [alumnos, setAlumnos] = useState([]);
     const [alertas, setAlertas] = useState([]);
     const [asistenciasHoy, setAsistenciasHoy] = useState([]);
@@ -21,28 +27,28 @@ function App() {
     const [datosGrafico, setDatosGrafico] = useState([]);
     const [filtroCasos, setFiltroCasos] = useState('activos');
     const [loading, setLoading] = useState(true);
-
+ 
     const [stats, setStats] = useState({
         totalAlumnos: 0,
         alertasPendientes: 0,
         presentesHoy: 0,
         ausentesHoy: 0
     });
-
+ 
     // ==================== AUTENTICACIÓN ====================
-
+ 
     const handleLogin = (usuarioData) => {
         setUsuario(usuarioData);
         setToken(localStorage.getItem('token'));
     };
-
+ 
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('usuario');
         setToken(null);
         setUsuario(null);
     };
-
+ 
     useEffect(() => {
         const savedToken = localStorage.getItem('token');
         const savedUsuario = localStorage.getItem('usuario');
@@ -51,12 +57,12 @@ function App() {
             setUsuario(JSON.parse(savedUsuario));
         }
     }, []);
-
+ 
     // ==================== CARGA DE DATOS ====================
-
+ 
     useEffect(() => {
         if (!token || !usuario) return;
-
+ 
         const cargarDatos = async () => {
             setLoading(true);
             try {
@@ -69,7 +75,7 @@ function App() {
                 setAlertas(alertasData);
                 const hoy = new Date().toISOString().split('T')[0];
                 setAsistenciasHoy(asistenciasData.filter(a => a.fecha === hoy));
-
+ 
                 if (usuario.rol === 'psicologo') {
                     const casosData = await getCasos();
                     setCasos(casosData);
@@ -84,10 +90,40 @@ function App() {
                 setLoading(false);
             }
         };
-
+ 
         cargarDatos();
     }, [token, usuario]);
-
+ 
+    // ==================== SUPABASE REALTIME ====================
+ 
+    useEffect(() => {
+        if (!token || !usuario) return;
+ 
+        const canal = supabase
+            .channel('asistencias-realtime')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'asistencias'
+            }, async () => {
+                const hoy = new Date().toISOString().split('T')[0];
+                const asistenciasData = await getAsistencias();
+                setAsistenciasHoy(asistenciasData.filter(a => a.fecha === hoy));
+ 
+                if (usuario.rol === 'director') {
+                    const graficoData = await getEstadisticasAsistencia();
+                    setDatosGrafico(graficoData);
+                }
+            })
+            .subscribe();
+ 
+        return () => {
+            supabase.removeChannel(canal);
+        };
+    }, [token, usuario]);
+ 
+    // ==================== STATS ====================
+ 
     useEffect(() => {
         setStats({
             totalAlumnos: alumnos.length,
@@ -96,27 +132,27 @@ function App() {
             ausentesHoy: asistenciasHoy.filter(a => a.estado === 'ausente').length
         });
     }, [alumnos, alertas, asistenciasHoy]);
-
+ 
     // ==================== HANDLERS GLOBALES ====================
-
+ 
     const handleAlumnoCreado = (nuevoAlumno) => {
         setAlumnos(prev => [...prev, nuevoAlumno]);
     };
-
+ 
     const handleAlertaAtendida = (id) => {
         setAlertas(prev => prev.filter(a => a.id !== id));
     };
-
+ 
     const handleCasoCreado = (caso) => {
         setCasos(prev => [caso, ...prev]);
     };
-
+ 
     const handleCasoCerrado = (id) => {
         setCasos(prev => prev.map(c => c.id === id ? { ...c, estado: 'cerrado' } : c));
     };
-
+ 
     // ==================== NAVEGACIÓN ====================
-
+ 
     const navItems = [
         { key: 'dashboard', label: '🏠 Inicio', roles: ['director', 'psicologo', 'docente'] },
         { key: 'alumnos', label: '👥 Alumnos', roles: ['director', 'psicologo'] },
@@ -125,13 +161,13 @@ function App() {
         { key: 'casos', label: '🧠 Casos', roles: ['psicologo'] },
         { key: 'reportes', label: '📊 Reportes', roles: ['director'] },
     ];
-
+ 
     // ==================== RENDER ====================
-
+ 
     if (!token || !usuario) {
         return <Login onLogin={handleLogin} />;
     }
-
+ 
     const renderVista = () => {
         if (loading) return <p style={{ textAlign: 'center', padding: '40px' }}>Cargando...</p>;
         switch (vista) {
@@ -144,10 +180,9 @@ function App() {
             default:           return <Dashboard usuario={usuario} stats={stats} alertas={alertas} asistenciasHoy={asistenciasHoy} datosGrafico={datosGrafico} onAtenderAlerta={handleAlertaAtendida} />;
         }
     };
-
+ 
     return (
         <div style={{ fontFamily: 'Arial, sans-serif', minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
-            {/* Navbar */}
             <nav style={{ backgroundColor: '#1976D2', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                     <span style={{ color: 'white', fontWeight: 'bold', fontSize: '18px', padding: '15px 10px' }}>📚 EduTrack</span>
@@ -182,13 +217,12 @@ function App() {
                     </button>
                 </div>
             </nav>
-
-            {/* Contenido */}
+ 
             <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '30px 20px' }}>
                 {renderVista()}
             </main>
         </div>
     );
 }
-
+ 
 export default App;
