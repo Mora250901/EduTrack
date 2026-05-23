@@ -2,6 +2,7 @@ const express = require('express');
 const { body } = require('express-validator');
 const supabase = require('../lib/supabase');
 const validar = require('../middleware/validar');
+const verificarToken = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -13,7 +14,7 @@ const validarAsistencia = [
 ];
 
 // Verificar si ya existe asistencia para un alumno en una fecha
-router.get('/verificar', async (req, res) => {
+router.get('/verificar', verificarToken, async (req, res) => {
     const { alumno_id, fecha } = req.query;
 
     if (!alumno_id || !fecha) {
@@ -35,7 +36,7 @@ router.get('/verificar', async (req, res) => {
 });
 
 // Registrar o actualizar asistencia
-router.post('/', validarAsistencia, validar, async (req, res) => {
+router.post('/', verificarToken, validarAsistencia, validar, async (req, res) => {
     const { alumno_id, fecha, estado, observacion, registrado_por } = req.body;
 
     let registradoPorUUID = null;
@@ -82,7 +83,7 @@ router.post('/', validarAsistencia, validar, async (req, res) => {
 });
 
 // Reporte por fecha (debe ir antes de /:alumno_id)
-router.get('/reporte', async (req, res) => {
+router.get('/reporte', verificarToken, async (req, res) => {
     const { fecha } = req.query;
 
     if (!fecha) {
@@ -113,7 +114,7 @@ router.get('/reporte', async (req, res) => {
 });
 
 // Estadísticas para gráficos (debe ir antes de /:alumno_id)
-router.get('/estadisticas', async (req, res) => {
+router.get('/estadisticas', verificarToken, async (req, res) => {
     const { data: alumnos, error: alumnosError } = await supabase
         .from('alumnos')
         .select('*');
@@ -163,7 +164,7 @@ router.get('/estadisticas', async (req, res) => {
 });
 
 // Obtener todas las asistencias
-router.get('/', async (req, res) => {
+router.get('/', verificarToken, async (req, res) => {
     const { data, error } = await supabase
         .from('asistencias')
         .select('*, alumnos(nombre, apellido, grado, seccion)')
@@ -174,7 +175,7 @@ router.get('/', async (req, res) => {
 });
 
 // Obtener asistencias de un alumno específico (debe ir al final)
-router.get('/:alumno_id', async (req, res) => {
+router.get('/:alumno_id', verificarToken, async (req, res) => {
     const { alumno_id } = req.params;
 
     const { data, error } = await supabase

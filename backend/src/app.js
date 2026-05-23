@@ -8,6 +8,7 @@ const alertasRoutes       = require('./routes/alertas');
 const casosRoutes         = require('./routes/casos');
 const seguimientosRoutes  = require('./routes/seguimientos');
 const notificacionesRoutes = require('./routes/notificaciones');
+const errorHandler = require('./middleware/errorHandler');
  
 const app = express();
  
@@ -35,5 +36,6 @@ app.use('/api/alertas', alertasRoutes);
 app.use('/api/casos', casosRoutes);
 app.use('/api/seguimientos', seguimientosRoutes);
 app.use('/api/notificar', notificacionesRoutes);
+app.use(errorHandler);
  
 module.exports = app;

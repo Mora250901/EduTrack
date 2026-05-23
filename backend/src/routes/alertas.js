@@ -1,10 +1,11 @@
 const express = require('express');
 const supabase = require('../lib/supabase');
+const verificarToken = require('../middleware/auth');
 
 const router = express.Router();
 
 // Crear una alerta
-router.post('/', async (req, res) => {
+router.post('/', verificarToken, async (req, res) => {
     const { alumno_id, tipo, nivel, mensaje } = req.body;
 
     const { data, error } = await supabase
@@ -17,7 +18,7 @@ router.post('/', async (req, res) => {
 });
 
 // Obtener alertas pendientes (debe ir antes de /:id)
-router.get('/pendientes', async (req, res) => {
+router.get('/pendientes', verificarToken, async (req, res) => {
     const { data, error } = await supabase
         .from('alertas')
         .select('*, alumnos(nombre, apellido, grado, seccion)')
@@ -29,7 +30,7 @@ router.get('/pendientes', async (req, res) => {
 });
 
 // Marcar alerta como atendida
-router.put('/:id/atender', async (req, res) => {
+router.put('/:id/atender', verificarToken, async (req, res) => {
     const { id } = req.params;
 
     const { data, error } = await supabase

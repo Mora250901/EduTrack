@@ -2,6 +2,7 @@ const express = require('express');
 const { body } = require('express-validator');
 const supabase = require('../lib/supabase');
 const validar = require('../middleware/validar');
+const verificarToken = require('../middleware/auth');
  
 const router = express.Router();
  
@@ -14,7 +15,7 @@ const validarAlumno = [
 ];
  
 // Obtener todos los alumnos
-router.get('/', async (req, res) => {
+router.get('/', verificarToken, async (req, res) => {
     const { data, error } = await supabase
         .from('alumnos')
         .select('*');
@@ -24,7 +25,7 @@ router.get('/', async (req, res) => {
 });
  
 // Crear un nuevo alumno
-router.post('/', validarAlumno, validar, async (req, res) => {
+router.post('/', verificarToken, validarAlumno, validar, async (req, res) => {
     const { nombre, apellido, grado, seccion, telefono_padre } = req.body;
  
     const { data, error } = await supabase

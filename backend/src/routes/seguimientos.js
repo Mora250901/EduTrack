@@ -1,10 +1,11 @@
 const express = require('express');
 const supabase = require('../lib/supabase');
+const verificarToken = require('../middleware/auth');
 
 const router = express.Router();
 
 // Obtener seguimientos de un caso
-router.get('/caso/:caso_id', async (req, res) => {
+router.get('/caso/:caso_id', verificarToken, async (req, res) => {
     const { caso_id } = req.params;
 
     const { data, error } = await supabase
@@ -18,7 +19,7 @@ router.get('/caso/:caso_id', async (req, res) => {
 });
 
 // Crear un seguimiento
-router.post('/', async (req, res) => {
+router.post('/', verificarToken, async (req, res) => {
     const { caso_id, tipo, descripcion, realizado_por } = req.body;
 
     const { data, error } = await supabase

@@ -1,10 +1,11 @@
 const express = require('express');
 const supabase = require('../lib/supabase');
+const verificarToken = require('../middleware/auth');
 
 const router = express.Router();
 
 // Obtener todos los casos
-router.get('/', async (req, res) => {
+router.get('/', verificarToken, async (req, res) => {
     const { data, error } = await supabase
         .from('casos')
         .select('*, alumnos(nombre, apellido, grado, seccion)')
@@ -15,7 +16,7 @@ router.get('/', async (req, res) => {
 });
 
 // Obtener casos de un alumno específico (debe ir antes de /:id)
-router.get('/alumno/:alumno_id', async (req, res) => {
+router.get('/alumno/:alumno_id', verificarToken, async (req, res) => {
     const { alumno_id } = req.params;
 
     const { data, error } = await supabase
@@ -29,7 +30,7 @@ router.get('/alumno/:alumno_id', async (req, res) => {
 });
 
 // Crear un caso
-router.post('/', async (req, res) => {
+router.post('/', verificarToken, async (req, res) => {
     const { alumno_id, titulo, descripcion, prioridad, creado_por } = req.body;
 
     const { data, error } = await supabase
@@ -42,7 +43,7 @@ router.post('/', async (req, res) => {
 });
 
 // Cerrar un caso
-router.put('/:id/cerrar', async (req, res) => {
+router.put('/:id/cerrar', verificarToken, async (req, res) => {
     const { id } = req.params;
 
     const { data, error } = await supabase
