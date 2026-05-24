@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
 import { crearCaso, cerrarCaso, crearSeguimiento, getSeguimientosPorCaso } from '../api';
 
+const prioridadConfig = {
+    alta:  { color: 'var(--danger)',  bg: 'var(--danger-bg)',  emoji: '🔴' },
+    media: { color: 'var(--warning)', bg: 'var(--warning-bg)', emoji: '🟡' },
+    baja:  { color: 'var(--success)', bg: 'var(--success-bg)', emoji: '🟢' },
+};
+
 function Casos({ casos, alumnos, usuario, onCasoCreado, onCasoCerrado, filtroCasos, setFiltroCasos }) {
     const [mostrarFormularioCaso, setMostrarFormularioCaso] = useState(false);
     const [alumnoSeleccionado, setAlumnoSeleccionado] = useState('');
@@ -8,7 +14,7 @@ function Casos({ casos, alumnos, usuario, onCasoCreado, onCasoCerrado, filtroCas
     const [creandoCaso, setCreandoCaso] = useState(false);
 
     const [seguimientos, setSeguimientos] = useState({});
-    const [mostrarFormularioSeguimiento, setMostrarFormularioSeguimiento] = useState(false);
+    const [mostrarSeguimientos, setMostrarSeguimientos] = useState(false);
     const [casoSeleccionado, setCasoSeleccionado] = useState(null);
     const [nuevoSeguimiento, setNuevoSeguimiento] = useState({ tipo: 'entrevista', descripcion: '' });
     const [creandoSeguimiento, setCreandoSeguimiento] = useState(false);
@@ -46,7 +52,7 @@ function Casos({ casos, alumnos, usuario, onCasoCreado, onCasoCerrado, filtroCas
 
     const handleVerSeguimientos = async (caso) => {
         setCasoSeleccionado(caso);
-        setMostrarFormularioSeguimiento(true);
+        setMostrarSeguimientos(true);
         if (!seguimientos[caso.id]) {
             const data = await getSeguimientosPorCaso(caso.id);
             setSeguimientos(prev => ({ ...prev, [caso.id]: data }));
@@ -81,54 +87,86 @@ function Casos({ casos, alumnos, usuario, onCasoCreado, onCasoCerrado, filtroCas
         return true;
     });
 
-    const colorPrioridad = (p) => p === 'alta' ? '#f44336' : p === 'media' ? '#ff9800' : '#4CAF50';
+    const filtros = [
+        { key: 'activos',  label: 'Activos',  count: casos.filter(c => c.estado === 'activo').length },
+        { key: 'cerrados', label: 'Cerrados', count: casos.filter(c => c.estado === 'cerrado').length },
+        { key: 'todos',    label: 'Todos',    count: casos.length },
+    ];
 
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h2>🧠 Casos Psicológicos</h2>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+                <div className="page-header" style={{ margin: 0 }}>
+                    <h2>🧠 Casos Psicológicos</h2>
+                    <p>Seguimiento de intervenciones y bienestar estudiantil.</p>
+                </div>
                 <button
+                    className={`btn ${mostrarFormularioCaso ? 'btn-ghost' : 'btn-primary'}`}
                     onClick={() => setMostrarFormularioCaso(!mostrarFormularioCaso)}
-                    style={{ padding: '8px 16px', backgroundColor: '#9C27B0', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                    style={{ background: mostrarFormularioCaso ? undefined : 'var(--purple)', borderColor: mostrarFormularioCaso ? 'var(--purple)' : undefined, color: mostrarFormularioCaso ? 'var(--purple)' : undefined }}
                 >
-                    {mostrarFormularioCaso ? 'Cancelar' : '+ Nuevo Caso'}
+                    {mostrarFormularioCaso ? '✕ Cancelar' : '+ Nuevo Caso'}
                 </button>
             </div>
 
             {/* Filtros */}
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-                {['activos', 'cerrados', 'todos'].map(f => (
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+                {filtros.map(f => (
                     <button
-                        key={f}
-                        onClick={() => setFiltroCasos(f)}
-                        style={{ padding: '6px 14px', borderRadius: '20px', border: 'none', cursor: 'pointer', backgroundColor: filtroCasos === f ? '#9C27B0' : '#e0e0e0', color: filtroCasos === f ? 'white' : '#333' }}
+                        key={f.key}
+                        onClick={() => setFiltroCasos(f.key)}
+                        style={{
+                            padding: '7px 16px', borderRadius: 'var(--radius-full)',
+                            border: '2px solid', cursor: 'pointer',
+                            fontSize: '13px', fontWeight: '500',
+                            transition: 'var(--transition)',
+                            borderColor: filtroCasos === f.key ? 'var(--purple)' : 'var(--gray-200)',
+                            background: filtroCasos === f.key ? 'var(--purple-bg)' : 'var(--white)',
+                            color: filtroCasos === f.key ? 'var(--purple)' : 'var(--gray-500)',
+                        }}
                     >
-                        {f.charAt(0).toUpperCase() + f.slice(1)}
+                        {f.label} <span style={{ fontSize: '11px', fontWeight: '700' }}>({f.count})</span>
                     </button>
                 ))}
             </div>
 
             {/* Formulario nuevo caso */}
             {mostrarFormularioCaso && (
-                <div style={{ backgroundColor: '#f3e5f5', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
-                    <h3>Nuevo Caso</h3>
+                <div className="card fade-in" style={{ marginBottom: '24px', borderTop: '4px solid var(--purple)' }}>
+                    <h3 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '16px', color: 'var(--purple)' }}>
+                        🧠 Nuevo Caso
+                    </h3>
                     <form onSubmit={handleCrearCaso}>
-                        <select value={alumnoSeleccionado} onChange={e => setAlumnoSeleccionado(e.target.value)} required style={{ padding: '8px', width: '100%', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                            <option value="">Selecciona un alumno</option>
-                            {alumnos.map(a => (
-                                <option key={a.id} value={a.id}>{a.nombre} {a.apellido} - {a.grado}° {a.seccion}</option>
-                            ))}
-                        </select>
-                        <input type="text" placeholder="Título del caso" value={nuevoCaso.titulo} onChange={e => setNuevoCaso({ ...nuevoCaso, titulo: e.target.value })} required style={{ padding: '8px', width: '100%', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                        <textarea placeholder="Descripción" value={nuevoCaso.descripcion} onChange={e => setNuevoCaso({ ...nuevoCaso, descripcion: e.target.value })} style={{ padding: '8px', width: '100%', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc', minHeight: '80px' }} />
-                        <select value={nuevoCaso.prioridad} onChange={e => setNuevoCaso({ ...nuevoCaso, prioridad: e.target.value })} style={{ padding: '8px', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                            <option value="baja">Baja</option>
-                            <option value="media">Media</option>
-                            <option value="alta">Alta</option>
-                        </select>
-                        <br />
-                        <button type="submit" disabled={creandoCaso} style={{ padding: '8px 16px', backgroundColor: '#9C27B0', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                            {creandoCaso ? 'Guardando...' : 'Guardar Caso'}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                            <div className="form-group" style={{ margin: 0, gridColumn: '1 / -1' }}>
+                                <label>Alumno</label>
+                                <select className="select" value={alumnoSeleccionado} onChange={e => setAlumnoSeleccionado(e.target.value)} required>
+                                    <option value="">Selecciona un alumno</option>
+                                    {alumnos.map(a => (
+                                        <option key={a.id} value={a.id}>{a.nombre} {a.apellido} — {a.grado}° {a.seccion}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="form-group" style={{ margin: 0 }}>
+                                <label>Título del caso</label>
+                                <input className="input" type="text" placeholder="Ej: Dificultades de integración" value={nuevoCaso.titulo} onChange={e => setNuevoCaso({ ...nuevoCaso, titulo: e.target.value })} required />
+                            </div>
+                            <div className="form-group" style={{ margin: 0 }}>
+                                <label>Prioridad</label>
+                                <select className="select" value={nuevoCaso.prioridad} onChange={e => setNuevoCaso({ ...nuevoCaso, prioridad: e.target.value })}>
+                                    <option value="baja">🟢 Baja</option>
+                                    <option value="media">🟡 Media</option>
+                                    <option value="alta">🔴 Alta</option>
+                                </select>
+                            </div>
+                            <div className="form-group" style={{ margin: 0, gridColumn: '1 / -1' }}>
+                                <label>Descripción</label>
+                                <textarea className="input" placeholder="Describe la situación del alumno..." value={nuevoCaso.descripcion} onChange={e => setNuevoCaso({ ...nuevoCaso, descripcion: e.target.value })} style={{ minHeight: '80px', resize: 'vertical' }} />
+                            </div>
+                        </div>
+                        <button type="submit" className="btn" disabled={creandoCaso} style={{ background: 'var(--purple)', color: 'white' }}>
+                            {creandoCaso ? '⏳ Guardando...' : '💾 Guardar Caso'}
                         </button>
                     </form>
                 </div>
@@ -136,59 +174,107 @@ function Casos({ casos, alumnos, usuario, onCasoCreado, onCasoCerrado, filtroCas
 
             {/* Lista de casos */}
             {casosFiltrados.length === 0 ? (
-                <p style={{ textAlign: 'center', color: '#999' }}>No hay casos {filtroCasos !== 'todos' ? filtroCasos : ''}</p>
+                <div className="card" style={{ textAlign: 'center', padding: '40px', color: 'var(--gray-500)' }}>
+                    <p style={{ fontSize: '32px', marginBottom: '8px' }}>📂</p>
+                    <p>No hay casos {filtroCasos !== 'todos' ? filtroCasos : ''}</p>
+                </div>
             ) : (
-                casosFiltrados.map(caso => (
-                    <div key={caso.id} style={{ backgroundColor: 'white', padding: '15px', borderRadius: '8px', marginBottom: '10px', borderLeft: `4px solid ${colorPrioridad(caso.prioridad)}`, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <div>
-                                <strong>{caso.titulo}</strong>
-                                <span style={{ marginLeft: '10px', fontSize: '12px', backgroundColor: colorPrioridad(caso.prioridad), color: 'white', padding: '2px 8px', borderRadius: '12px' }}>{caso.prioridad}</span>
-                                <p style={{ margin: '4px 0', fontSize: '14px', color: '#666' }}>{caso.alumnos?.nombre} {caso.alumnos?.apellido} — {caso.alumnos?.grado}° {caso.alumnos?.seccion}</p>
-                                <p style={{ margin: '4px 0', fontSize: '14px' }}>{caso.descripcion}</p>
-                            </div>
-                            <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                                <button onClick={() => handleVerSeguimientos(caso)} style={{ padding: '6px 12px', backgroundColor: '#2196F3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
-                                    Seguimientos
-                                </button>
-                                {caso.estado === 'activo' && (
-                                    <button onClick={() => handleCerrarCaso(caso.id)} style={{ padding: '6px 12px', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
-                                        Cerrar
+                casosFiltrados.map(caso => {
+                    const cfg = prioridadConfig[caso.prioridad] || prioridadConfig.baja;
+                    return (
+                        <div key={caso.id} className="fade-in" style={{
+                            background: 'var(--white)', borderRadius: 'var(--radius-md)',
+                            padding: '16px 20px', marginBottom: '12px',
+                            borderLeft: `4px solid ${cfg.color}`,
+                            boxShadow: 'var(--shadow-sm)',
+                            transition: 'var(--transition)'
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                                        <strong style={{ fontSize: '15px', color: 'var(--gray-900)' }}>{caso.titulo}</strong>
+                                        <span className="badge" style={{ background: cfg.bg, color: cfg.color }}>{cfg.emoji} {caso.prioridad}</span>
+                                        <span className="badge" style={{ background: caso.estado === 'activo' ? 'var(--primary-bg)' : 'var(--gray-200)', color: caso.estado === 'activo' ? 'var(--primary)' : 'var(--gray-500)' }}>
+                                            {caso.estado}
+                                        </span>
+                                    </div>
+                                    <p style={{ fontSize: '13px', color: 'var(--gray-500)', marginBottom: '4px' }}>
+                                        👤 {caso.alumnos?.nombre} {caso.alumnos?.apellido} — {caso.alumnos?.grado}° {caso.alumnos?.seccion}
+                                    </p>
+                                    <p style={{ fontSize: '14px', color: 'var(--gray-700)', margin: 0 }}>{caso.descripcion}</p>
+                                </div>
+                                <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                                    <button className="btn btn-primary" onClick={() => handleVerSeguimientos(caso)} style={{ fontSize: '12px', padding: '6px 12px' }}>
+                                        📋 Seguimientos
                                     </button>
-                                )}
+                                    {caso.estado === 'activo' && (
+                                        <button className="btn btn-danger" onClick={() => handleCerrarCaso(caso.id)} style={{ fontSize: '12px', padding: '6px 12px' }}>
+                                            ✕ Cerrar
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))
+                    );
+                })
             )}
 
-            {/* Panel de seguimientos */}
-            {mostrarFormularioSeguimiento && casoSeleccionado && (
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-                    <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', width: '90%', maxWidth: '500px', maxHeight: '80vh', overflowY: 'auto' }}>
-                        <h3>Seguimientos: {casoSeleccionado.titulo}</h3>
-                        {(seguimientos[casoSeleccionado.id] || []).map(seg => (
-                            <div key={seg.id} style={{ backgroundColor: '#f5f5f5', padding: '10px', borderRadius: '4px', marginBottom: '8px' }}>
-                                <strong>{seg.tipo}</strong>
-                                <p style={{ margin: '4px 0', fontSize: '14px' }}>{seg.descripcion}</p>
-                                <p style={{ margin: 0, fontSize: '12px', color: '#999' }}>{new Date(seg.fecha).toLocaleDateString()}</p>
-                            </div>
-                        ))}
-                        <form onSubmit={handleCrearSeguimiento} style={{ marginTop: '15px' }}>
-                            <select value={nuevoSeguimiento.tipo} onChange={e => setNuevoSeguimiento({ ...nuevoSeguimiento, tipo: e.target.value })} style={{ padding: '8px', width: '100%', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                                <option value="entrevista">Entrevista</option>
-                                <option value="observacion">Observación</option>
-                                <option value="derivacion">Derivación</option>
-                                <option value="otro">Otro</option>
-                            </select>
-                            <textarea placeholder="Descripción del seguimiento" value={nuevoSeguimiento.descripcion} onChange={e => setNuevoSeguimiento({ ...nuevoSeguimiento, descripcion: e.target.value })} required style={{ padding: '8px', width: '100%', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc', minHeight: '80px' }} />
-                            <button type="submit" disabled={creandoSeguimiento} style={{ padding: '8px 16px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                                {creandoSeguimiento ? 'Guardando...' : 'Guardar Seguimiento'}
-                            </button>
-                            <button type="button" onClick={() => setMostrarFormularioSeguimiento(false)} style={{ marginLeft: '10px', padding: '8px 16px', backgroundColor: '#999', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                                Cancelar
-                            </button>
-                        </form>
+            {/* Modal seguimientos */}
+            {mostrarSeguimientos && casoSeleccionado && (
+                <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setMostrarSeguimientos(false); }}>
+                    <div className="modal">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--gray-900)' }}>
+                                📋 {casoSeleccionado.titulo}
+                            </h3>
+                            <button className="btn btn-ghost" onClick={() => setMostrarSeguimientos(false)} style={{ padding: '4px 10px', fontSize: '16px' }}>✕</button>
+                        </div>
+
+                        {/* Lista de seguimientos */}
+                        <div style={{ marginBottom: '20px' }}>
+                            {(seguimientos[casoSeleccionado.id] || []).length === 0 ? (
+                                <p style={{ textAlign: 'center', color: 'var(--gray-500)', padding: '16px', fontSize: '13px' }}>
+                                    No hay seguimientos registrados aún
+                                </p>
+                            ) : (
+                                (seguimientos[casoSeleccionado.id] || []).map(seg => (
+                                    <div key={seg.id} style={{ background: 'var(--gray-100)', borderRadius: 'var(--radius-sm)', padding: '12px', marginBottom: '8px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                            <span className="badge badge-primary">{seg.tipo}</span>
+                                            <span style={{ fontSize: '11px', color: 'var(--gray-500)' }}>
+                                                {new Date(seg.fecha).toLocaleDateString('es-PE', { day: '2-digit', month: 'long' })}
+                                            </span>
+                                        </div>
+                                        <p style={{ fontSize: '13px', color: 'var(--gray-700)', margin: 0 }}>{seg.descripcion}</p>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        {/* Formulario nuevo seguimiento */}
+                        <div style={{ borderTop: '1px solid var(--gray-200)', paddingTop: '16px' }}>
+                            <h4 style={{ fontSize: '13px', fontWeight: '600', marginBottom: '12px', color: 'var(--gray-700)' }}>
+                                ➕ Agregar Seguimiento
+                            </h4>
+                            <form onSubmit={handleCrearSeguimiento}>
+                                <div className="form-group">
+                                    <label>Tipo</label>
+                                    <select className="select" value={nuevoSeguimiento.tipo} onChange={e => setNuevoSeguimiento({ ...nuevoSeguimiento, tipo: e.target.value })}>
+                                        <option value="entrevista">Entrevista</option>
+                                        <option value="observacion">Observación</option>
+                                        <option value="derivacion">Derivación</option>
+                                        <option value="otro">Otro</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Descripción</label>
+                                    <textarea className="input" placeholder="Describe la intervención realizada..." value={nuevoSeguimiento.descripcion} onChange={e => setNuevoSeguimiento({ ...nuevoSeguimiento, descripcion: e.target.value })} required style={{ minHeight: '80px', resize: 'vertical' }} />
+                                </div>
+                                <button type="submit" className="btn btn-success" disabled={creandoSeguimiento} style={{ width: '100%', justifyContent: 'center' }}>
+                                    {creandoSeguimiento ? '⏳ Guardando...' : '💾 Guardar Seguimiento'}
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             )}

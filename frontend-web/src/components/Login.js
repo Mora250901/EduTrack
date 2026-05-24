@@ -5,6 +5,7 @@ function Login({ onLogin }) {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -36,92 +37,155 @@ function Login({ onLogin }) {
 
     return (
         <div style={{
+            minHeight: '100vh',
+            background: 'linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-light) 60%, #42A5F5 100%)',
             display: 'flex',
-            justifyContent: 'center',
             alignItems: 'center',
-            height: '100vh',
-            backgroundColor: '#f0f0f0'
+            justifyContent: 'center',
+            padding: '20px'
         }}>
-            <div style={{
-                backgroundColor: 'white',
-                padding: '40px',
-                borderRadius: '8px',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                width: '350px'
+            <style>{`
+                @keyframes floatUp {
+                    from { opacity: 0; transform: translateY(24px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .login-card {
+                    animation: floatUp 0.4s ease forwards;
+                }
+                .login-input:focus {
+                    outline: none;
+                    border-color: var(--primary-light) !important;
+                    box-shadow: 0 0 0 3px rgba(25,118,210,0.15);
+                }
+                .login-btn:hover:not(:disabled) {
+                    background: var(--primary-dark) !important;
+                    transform: translateY(-1px);
+                    box-shadow: 0 6px 20px rgba(13,71,161,0.35);
+                }
+                .login-btn:active {
+                    transform: translateY(0);
+                }
+            `}</style>
+
+            <div className="login-card" style={{
+                background: 'var(--white)',
+                borderRadius: 'var(--radius-lg)',
+                boxShadow: 'var(--shadow-lg)',
+                width: '100%',
+                maxWidth: '400px',
+                overflow: 'hidden'
             }}>
-                <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>📚 EduTrack</h1>
-                <h2 style={{ textAlign: 'center', marginBottom: '20px', fontSize: '18px' }}>Iniciar Sesión</h2>
-                
-                {error && (
+                {/* Header */}
+                <div style={{
+                    background: 'linear-gradient(135deg, var(--primary-dark), var(--primary-light))',
+                    padding: '32px 40px 28px',
+                    textAlign: 'center'
+                }}>
                     <div style={{
-                        backgroundColor: '#ffebee',
-                        color: '#f44336',
-                        padding: '10px',
-                        borderRadius: '4px',
-                        marginBottom: '20px',
-                        textAlign: 'center'
+                        width: '64px', height: '64px',
+                        background: 'rgba(255,255,255,0.2)',
+                        borderRadius: '18px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '32px', margin: '0 auto 16px'
                     }}>
-                        {error}
+                        📚
                     </div>
-                )}
-                
-                <form onSubmit={handleSubmit}>
-                    <div style={{ marginBottom: '15px' }}>
-                        <label style={{ display: 'block', marginBottom: '5px' }}>Email</label>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
+                    <h1 style={{ color: 'white', fontSize: '24px', fontWeight: '700', margin: 0 }}>EduTrack</h1>
+                    <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '13px', marginTop: '6px' }}>
+                        Plataforma de Gestión del Bienestar Estudiantil
+                    </p>
+                </div>
+
+                {/* Form */}
+                <div style={{ padding: '32px 40px' }}>
+                    <h2 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--gray-700)', marginBottom: '24px', textAlign: 'center' }}>
+                        Inicia sesión para continuar
+                    </h2>
+
+                    {error && (
+                        <div className="alert alert-danger" style={{ marginBottom: '20px' }}>
+                            ⚠️ {error}
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit}>
+                        <div className="form-group">
+                            <label>Correo electrónico</label>
+                            <input
+                                className="input login-input"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="usuario@edutrack.com"
+                                required
+                            />
+                        </div>
+
+                        <div className="form-group" style={{ position: 'relative' }}>
+                            <label>Contraseña</label>
+                            <input
+                                className="input login-input"
+                                type={showPassword ? 'text' : 'password'}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="••••••••"
+                                required
+                                style={{ paddingRight: '44px' }}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                style={{
+                                    position: 'absolute', right: '12px', bottom: '10px',
+                                    background: 'none', border: 'none', cursor: 'pointer',
+                                    fontSize: '16px', color: 'var(--gray-500)'
+                                }}
+                            >
+                                {showPassword ? '🙈' : '👁️'}
+                            </button>
+                        </div>
+
+                        <button
+                            type="submit"
+                            className="btn btn-primary login-btn"
+                            disabled={loading}
                             style={{
                                 width: '100%',
-                                padding: '10px',
-                                borderRadius: '4px',
-                                border: '1px solid #ccc'
+                                justifyContent: 'center',
+                                padding: '12px',
+                                fontSize: '15px',
+                                marginTop: '8px',
+                                transition: 'all 0.2s ease'
                             }}
-                        />
+                        >
+                            {loading ? (
+                                <>
+                                    <span style={{ display: 'inline-block', width: '14px', height: '14px', border: '2px solid rgba(255,255,255,0.4)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                                    Ingresando...
+                                </>
+                            ) : 'Ingresar →'}
+                        </button>
+                    </form>
+
+                    {/* Usuarios de prueba */}
+                    <div style={{
+                        marginTop: '24px',
+                        padding: '14px',
+                        background: 'var(--gray-100)',
+                        borderRadius: 'var(--radius-sm)',
+                        fontSize: '12px',
+                        color: 'var(--gray-500)'
+                    }}>
+                        <p style={{ fontWeight: '600', marginBottom: '6px', color: 'var(--gray-700)' }}>Usuarios de prueba:</p>
+                        <p>🔵 director@edutrack.com</p>
+                        <p>🟣 psicologo@edutrack.com</p>
+                        <p>🟢 docente@edutrack.com</p>
+                        <p style={{ marginTop: '4px' }}>Contraseña: <strong>admin123</strong></p>
                     </div>
-                    
-                    <div style={{ marginBottom: '20px' }}>
-                        <label style={{ display: 'block', marginBottom: '5px' }}>Contraseña</label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            style={{
-                                width: '100%',
-                                padding: '10px',
-                                borderRadius: '4px',
-                                border: '1px solid #ccc'
-                            }}
-                        />
-                    </div>
-                    
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        style={{
-                            width: '100%',
-                            padding: '10px',
-                            backgroundColor: '#2196F3',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: loading ? 'not-allowed' : 'pointer'
-                        }}
-                    >
-                        {loading ? 'Ingresando...' : 'Ingresar'}
-                    </button>
-                </form>
-                
-                <div style={{ marginTop: '20px', fontSize: '12px', color: '#666', textAlign: 'center' }}>
-                    <p>Usuarios de prueba:</p>
-                    <p>director@edutrack.com / admin123</p>
-                    <p>psicologo@edutrack.com / admin123</p>
-                    <p>docente@edutrack.com / admin123</p>
                 </div>
             </div>
+
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
     );
 }

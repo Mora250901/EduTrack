@@ -1,10 +1,11 @@
 const express = require('express');
 const supabase = require('../lib/supabase');
+const verificarToken = require('../middleware/auth');
 
 const router = express.Router();
 
 // Notificar a padre (simulado)
-router.post('/padre', async (req, res) => {
+router.post('/padre', verificarToken, async (req, res) => {
     const { alumno_id, mensaje } = req.body;
 
     const { data: alumno, error } = await supabase

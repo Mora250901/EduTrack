@@ -2,36 +2,44 @@ import React, { useState } from 'react';
 import { registrarAsistencia } from '../api';
 
 const BASE_URL = 'https://edutrack-backend-2ycx.onrender.com';
-
 const estadoEmoji = { presente: '✅', ausente: '❌', tarde: '⏰' };
+const estadoColor = { presente: 'var(--success)', ausente: 'var(--danger)', tarde: 'var(--warning)' };
+const estadoBg    = { presente: 'var(--success-bg)', ausente: 'var(--danger-bg)', tarde: 'var(--warning-bg)' };
 
 function Asistencia({ alumnos, usuario }) {
     const [selectedAlumno, setSelectedAlumno] = useState('');
     const [asistencia, setAsistencia] = useState({ estado: 'presente', observacion: '' });
     const [saving, setSaving] = useState(false);
-    const [mensaje, setMensaje] = useState('');
+    const [mensaje, setMensaje] = useState({ texto: '', tipo: '' });
     const [asistenciaExistente, setAsistenciaExistente] = useState(null);
     const [confirmando, setConfirmando] = useState(false);
+    const [verificando, setVerificando] = useState(false);
 
     const handleChangeAlumno = async (e) => {
         const alumno_id = e.target.value;
         setSelectedAlumno(alumno_id);
         setAsistenciaExistente(null);
         setConfirmando(false);
-        setMensaje('');
-
+        setMensaje({ texto: '', tipo: '' });
         if (!alumno_id) return;
 
+        setVerificando(true);
         const hoy = new Date().toISOString().split('T')[0];
         try {
-            const res = await fetch(`${BASE_URL}/api/asistencias/verificar?alumno_id=${alumno_id}&fecha=${hoy}`);
+            const res = await fetch(`${BASE_URL}/api/asistencias/verificar?alumno_id=${alumno_id}&fecha=${hoy}`, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            });
             const data = await res.json();
             if (data.existe) {
                 setAsistenciaExistente(data.asistencia);
                 setAsistencia({ estado: data.asistencia.estado, observacion: data.asistencia.observacion || '' });
+            } else {
+                setAsistencia({ estado: 'presente', observacion: '' });
             }
         } catch (error) {
             console.error('Error al verificar asistencia:', error);
+        } finally {
+            setVerificando(false);
         }
     };
 
@@ -42,11 +50,9 @@ function Asistencia({ alumnos, usuario }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!selectedAlumno) {
-            setMensaje('❌ Selecciona un alumno');
+            setMensaje({ texto: 'Selecciona un alumno', tipo: 'danger' });
             return;
         }
-
-        // Si ya existe asistencia y no ha confirmado aún, mostrar aviso
         if (asistenciaExistente && !confirmando) {
             setConfirmando(true);
             return;
@@ -63,112 +69,129 @@ function Asistencia({ alumnos, usuario }) {
                 observacion: asistencia.observacion,
                 registrado_por: usuario?.id
             });
-
-            if (resultado.actualizado) {
-                setMensaje('✅ Asistencia actualizada correctamente');
-            } else {
-                setMensaje('✅ Asistencia registrada correctamente');
-            }
-
+            setMensaje({
+                texto: resultado.actualizado ? 'Asistencia actualizada correctamente' : 'Asistencia registrada correctamente',
+                tipo: 'success'
+            });
             setSelectedAlumno('');
             setAsistencia({ estado: 'presente', observacion: '' });
             setAsistenciaExistente(null);
         } catch (error) {
-            setMensaje('❌ Error al registrar asistencia');
+            setMensaje({ texto: 'Error al registrar asistencia', tipo: 'danger' });
         } finally {
             setSaving(false);
-            setTimeout(() => setMensaje(''), 4000);
+            setTimeout(() => setMensaje({ texto: '', tipo: '' }), 4000);
         }
     };
 
     const alumnoNombre = alumnos.find(a => a.id === selectedAlumno);
 
+    const RadioEstado = ({ valor }) => (
+        <label style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            padding: '10px 16px', borderRadius: 'var(--radius-sm)',
+            border: `2px solid ${asistencia.estado === valor ? estadoColor[valor] : 'var(--gray-200)'}`,
+            background: asistencia.estado === valor ? estadoBg[valor] : 'var(--white)',
+            cursor: 'pointer', transition: 'var(--transition)', flex: 1,
+            justifyContent: 'center', fontWeight: asistencia.estado === valor ? '600' : '400',
+            color: asistencia.estado === valor ? estadoColor[valor] : 'var(--gray-700)'
+        }}>
+            <input type="radio" name="estado" value={valor} checked={asistencia.estado === valor} onChange={handleChange} style={{ display: 'none' }} />
+            {estadoEmoji[valor]} {valor.charAt(0).toUpperCase() + valor.slice(1)}
+        </label>
+    );
+
     return (
         <div>
-            <div style={{ backgroundColor: '#e3f2fd', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
+            <div className="page-header">
                 <h2>📝 Registrar Asistencia</h2>
+                <p>Marca la asistencia diaria de los alumnos al ingreso del colegio.</p>
+            </div>
 
-                {mensaje && (
-                    <div style={{ padding: '10px', borderRadius: '4px', marginBottom: '10px', backgroundColor: mensaje.includes('✅') ? '#e8f5e9' : '#ffebee' }}>
-                        {mensaje}
+            <div className="card" style={{ maxWidth: '600px' }}>
+
+                {mensaje.texto && (
+                    <div className={`alert alert-${mensaje.tipo}`} style={{ marginBottom: '20px' }}>
+                        {mensaje.tipo === 'success' ? '✅' : '❌'} {mensaje.texto}
                     </div>
                 )}
 
-                {/* Aviso de confirmación */}
+                {/* Confirmación */}
                 {confirmando && asistenciaExistente && alumnoNombre && (
-                    <div style={{ backgroundColor: '#fff8e1', border: '1px solid #ffcc02', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
-                        <p style={{ margin: '0 0 10px', fontWeight: 'bold' }}>
-                            ⚠️ {alumnoNombre.nombre} {alumnoNombre.apellido} ya tiene asistencia registrada hoy:
+                    <div style={{
+                        background: 'var(--warning-bg)', border: '1px solid var(--warning-light)',
+                        borderRadius: 'var(--radius-md)', padding: '16px', marginBottom: '20px'
+                    }} className="fade-in">
+                        <p style={{ fontWeight: '600', marginBottom: '6px', color: 'var(--warning)' }}>
+                            ⚠️ {alumnoNombre.nombre} {alumnoNombre.apellido} ya tiene asistencia hoy:
                             {' '}{estadoEmoji[asistenciaExistente.estado]} <strong>{asistenciaExistente.estado}</strong>
                         </p>
-                        <p style={{ margin: '0 0 12px', fontSize: '14px' }}>
+                        <p style={{ fontSize: '13px', color: 'var(--gray-700)', marginBottom: '12px' }}>
                             ¿Deseas modificarla a {estadoEmoji[asistencia.estado]} <strong>{asistencia.estado}</strong>?
                         </p>
                         <div style={{ display: 'flex', gap: '10px' }}>
-                            <button
-                                onClick={handleSubmit}
-                                style={{ padding: '8px 16px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-                            >
-                                Sí, modificar
-                            </button>
-                            <button
-                                onClick={() => setConfirmando(false)}
-                                style={{ padding: '8px 16px', backgroundColor: '#999', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-                            >
-                                Cancelar
-                            </button>
+                            <button className="btn btn-success" onClick={handleSubmit}>✓ Sí, modificar</button>
+                            <button className="btn btn-ghost" onClick={() => setConfirmando(false)}>Cancelar</button>
                         </div>
                     </div>
                 )}
 
                 <form onSubmit={handleSubmit}>
-                    <div style={{ marginBottom: '10px' }}>
-                        <select
-                            value={selectedAlumno}
-                            onChange={handleChangeAlumno}
-                            required
-                            style={{ padding: '8px', width: '100%', borderRadius: '4px', border: '1px solid #ccc' }}
-                        >
-                            <option value="">Selecciona un alumno</option>
+                    {/* Selector alumno */}
+                    <div className="form-group">
+                        <label>Alumno</label>
+                        <select className="select" value={selectedAlumno} onChange={handleChangeAlumno} required>
+                            <option value="">Selecciona un alumno...</option>
                             {alumnos.map(alumno => (
                                 <option key={alumno.id} value={alumno.id}>
-                                    {alumno.nombre} {alumno.apellido} - {alumno.grado}° {alumno.seccion}
-                                    {asistenciaExistente && alumno.id === selectedAlumno ? ' (ya registrado hoy)' : ''}
+                                    {alumno.nombre} {alumno.apellido} — {alumno.grado}° {alumno.seccion}
                                 </option>
                             ))}
                         </select>
+                        {verificando && (
+                            <p style={{ fontSize: '12px', color: 'var(--gray-500)', marginTop: '4px' }}>
+                                🔍 Verificando asistencia...
+                            </p>
+                        )}
                     </div>
 
-                    {/* Indicador de asistencia existente */}
-                    {asistenciaExistente && (
-                        <div style={{ backgroundColor: '#fff3e0', padding: '8px 12px', borderRadius: '4px', marginBottom: '10px', fontSize: '14px' }}>
+                    {/* Indicador existente */}
+                    {asistenciaExistente && !confirmando && (
+                        <div className="alert alert-warning fade-in" style={{ marginBottom: '16px' }}>
                             {estadoEmoji[asistenciaExistente.estado]} Ya registrado hoy como <strong>{asistenciaExistente.estado}</strong> — puedes modificarlo abajo
                         </div>
                     )}
 
-                    <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                        <label><input type="radio" name="estado" value="presente" checked={asistencia.estado === 'presente'} onChange={handleChange} /> ✅ Presente</label>
-                        <label><input type="radio" name="estado" value="ausente" checked={asistencia.estado === 'ausente'} onChange={handleChange} /> ❌ Ausente</label>
-                        <label><input type="radio" name="estado" value="tarde" checked={asistencia.estado === 'tarde'} onChange={handleChange} /> ⏰ Tarde</label>
+                    {/* Estado con radio buttons visuales */}
+                    <div className="form-group">
+                        <label>Estado</label>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <RadioEstado valor="presente" />
+                            <RadioEstado valor="ausente" />
+                            <RadioEstado valor="tarde" />
+                        </div>
                     </div>
 
-                    <div style={{ marginBottom: '10px' }}>
+                    {/* Observación */}
+                    <div className="form-group">
+                        <label>Observación <span style={{ color: 'var(--gray-500)', fontWeight: '400' }}>(opcional)</span></label>
                         <input
+                            className="input"
                             type="text"
                             name="observacion"
-                            placeholder="Observación (opcional)"
+                            placeholder="Ej: llegó sin uniforme, salió temprano..."
                             value={asistencia.observacion}
                             onChange={handleChange}
-                            style={{ padding: '8px', width: '100%', borderRadius: '4px', border: '1px solid #ccc' }}
                         />
                     </div>
 
                     <button
                         type="submit"
+                        className={`btn ${asistenciaExistente ? 'btn-warning' : 'btn-primary'}`}
                         disabled={saving || confirmando}
-                        style={{ padding: '8px 16px', backgroundColor: asistenciaExistente ? '#ff9800' : '#2196F3', color: 'white', border: 'none', borderRadius: '4px', cursor: saving ? 'not-allowed' : 'pointer' }}
+                        style={{ width: '100%', justifyContent: 'center', padding: '12px' }}
                     >
-                        {saving ? 'Guardando...' : asistenciaExistente ? '✏️ Modificar Asistencia' : '📝 Registrar Asistencia'}
+                        {saving ? '⏳ Guardando...' : asistenciaExistente ? '✏️ Modificar Asistencia' : '📝 Registrar Asistencia'}
                     </button>
                 </form>
             </div>
