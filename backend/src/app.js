@@ -9,6 +9,7 @@ const casosRoutes         = require('./routes/casos');
 const seguimientosRoutes  = require('./routes/seguimientos');
 const notificacionesRoutes = require('./routes/notificaciones');
 const errorHandler = require('./middleware/errorHandler');
+const ANALYTICS_URL = process.env.ANALYTICS_URL || 'http://localhost:5000';
  
 const app = express();
  
@@ -37,5 +38,16 @@ app.use('/api/casos', casosRoutes);
 app.use('/api/seguimientos', seguimientosRoutes);
 app.use('/api/notificar', notificacionesRoutes);
 app.use(errorHandler);
+
+// Ruta para disparar análisis manualmente
+app.post('/api/analizar', async (req, res) => {
+    try {
+        const response = await fetch(`${ANALYTICS_URL}/analizar`, { method: 'POST' });
+        const data = await response.json();
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: 'No se pudo conectar con el servicio de analítica' });
+    }
+});
  
 module.exports = app;
