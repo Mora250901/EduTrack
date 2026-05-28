@@ -167,21 +167,7 @@ function Login({ onLogin }) {
                         </button>
                     </form>
 
-                    {/* Usuarios de prueba */}
-                    <div style={{
-                        marginTop: '24px',
-                        padding: '14px',
-                        background: 'var(--gray-100)',
-                        borderRadius: 'var(--radius-sm)',
-                        fontSize: '12px',
-                        color: 'var(--gray-500)'
-                    }}>
-                        <p style={{ fontWeight: '600', marginBottom: '6px', color: 'var(--gray-700)' }}>Usuarios de prueba:</p>
-                        <p>🔵 director@edutrack.com</p>
-                        <p>🟣 psicologo@edutrack.com</p>
-                        <p>🟢 docente@edutrack.com</p>
-                        <p style={{ marginTop: '4px' }}>Contraseña: <strong>admin123</strong></p>
-                    </div>
+                    
                 </div>
             </div>
 
